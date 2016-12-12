@@ -1,0 +1,2 @@
+add_subdirectory(TestBaseNetwork)
+add_subdirectory(TestHttp)
