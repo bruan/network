@@ -3,7 +3,7 @@
 #include "net_event_loop.h"
 #include "network.h"
 
-namespace base
+namespace net
 {
 	/**
 	@brief: ÍøÂç»ù´¡Àà
@@ -35,6 +35,8 @@ namespace base
 		bool			open();
 		bool			nonblock();
 		bool			reuseAddr();
+		bool			reusePort();
+		bool			setNoDelay(bool bEnable);
 		bool			setBufferSize();
 		void			setRemoteAddr();
 		void			setLocalAddr();

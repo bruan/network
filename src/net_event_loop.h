@@ -11,7 +11,7 @@
 
 #include "network.h"
 
-namespace base
+namespace net
 {
 
 	class CNetSocket;

@@ -2,7 +2,11 @@
 #include "net_socket.h"
 #include "net_event_loop.h"
 
-namespace base
+#ifndef _WIN32
+#include <netinet/tcp.h>
+#endif
+
+namespace net
 {
 	CNetSocket::CNetSocket()
 		: m_pNetEventLoop(nullptr)
@@ -99,8 +103,6 @@ namespace base
 		if (0 != nRet)
 		{
 			g_pLog->printWarning("set socket nonblock error %d", getLastError());
-			closesocket(this->m_nSocketID);
-			this->m_nSocketID = _Invalid_SocketID;
 			return false;
 		}
 #else
@@ -108,8 +110,6 @@ namespace base
 		if (-1 == nFlag)
 		{
 			g_pLog->printWarning("set socket nonblock error %d", getLastError());
-			::closesocket(this->m_nSocketID);
-			this->m_nSocketID = _Invalid_SocketID;
 			return false;
 		}
 
@@ -118,8 +118,6 @@ namespace base
 		if (-1 == nFlag)
 		{
 			g_pLog->printWarning("set socket nonblock error %d", getLastError());
-			closesocket(this->m_nSocketID);
-			this->m_nSocketID = _Invalid_SocketID;
 			return false;
 		}
 #endif
@@ -131,14 +129,27 @@ namespace base
 	{
 		DebugAstEx(this->m_nSocketID != _Invalid_SocketID, false);
 
-		uint32_t nFlag = 1;
-		if (0 != ::setsockopt(this->m_nSocketID, SOL_SOCKET, SO_REUSEADDR, (char*)&nFlag, sizeof(nFlag)))
+		int32_t nFlag = 1;
+		if (0 != ::setsockopt(this->m_nSocketID, SOL_SOCKET, SO_REUSEADDR, reinterpret_cast<char*>(&nFlag), sizeof(nFlag)))
 		{
 			g_pLog->printWarning("set socket to reuse addr mode error %d", getLastError());
-			closesocket(this->m_nSocketID);
-			this->m_nSocketID = _Invalid_SocketID;
 			return false;
 		}
+
+		return true;
+	}
+
+	bool CNetSocket::reusePort()
+	{
+#ifdef SO_REUSEPORT
+		int32_t nFlag = 1;
+		if (0 != ::setsockopt(this->m_nSocketID, SOL_SOCKET, SO_REUSEPORT, reinterpret_cast<char*>(&nFlag), sizeof(nFlag)))
+		{
+			g_pLog->printWarning("set socket to reuse port mode error %d", getLastError());
+			return false;
+		}
+#else
+#endif
 
 		return true;
 	}
@@ -147,23 +158,25 @@ namespace base
 	{
 		DebugAstEx(this->m_nSocketID != _Invalid_SocketID, false);
 
-		if (this->m_nRecvBufferSize != 0 && 0 != ::setsockopt(this->m_nSocketID, SOL_SOCKET, SO_RCVBUF, (char*)&this->m_nRecvBufferSize, sizeof(this->m_nRecvBufferSize)))
+		if (this->m_nRecvBufferSize != 0 && 0 != ::setsockopt(this->m_nSocketID, SOL_SOCKET, SO_RCVBUF, reinterpret_cast<char*>(&this->m_nRecvBufferSize), sizeof(this->m_nRecvBufferSize)))
 		{
 			g_pLog->printWarning("set socket recvbuf error %d", getLastError());
-			closesocket(this->m_nSocketID);
-			this->m_nSocketID = _Invalid_SocketID;
 			return false;
 		}
 
-		if (this->m_nSendBufferSize != 0 && 0 != ::setsockopt(this->m_nSocketID, SOL_SOCKET, SO_SNDBUF, (char*)&this->m_nSendBufferSize, sizeof(this->m_nSendBufferSize)))
+		if (this->m_nSendBufferSize != 0 && 0 != ::setsockopt(this->m_nSocketID, SOL_SOCKET, SO_SNDBUF, reinterpret_cast<char*>(&this->m_nSendBufferSize), sizeof(this->m_nSendBufferSize)))
 		{
 			g_pLog->printWarning("set socket sendbuf error %d", getLastError());
-			closesocket(this->m_nSocketID);
-			this->m_nSocketID = _Invalid_SocketID;
 			return false;
 		}
 
 		return true;
+	}
+
+	bool CNetSocket::setNoDelay(bool bEnable)
+	{
+		int32_t nFlag = bEnable ? 1 : 0;
+		return ::setsockopt(this->m_nSocketID, IPPROTO_TCP, TCP_NODELAY, reinterpret_cast<char*>(&nFlag), sizeof(nFlag)) == 0;
 	}
 
 	void CNetSocket::setRemoteAddr()

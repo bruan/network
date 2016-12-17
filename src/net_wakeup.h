@@ -2,7 +2,7 @@
 #include "net_socket.h"
 #include <atomic>
 
-namespace base
+namespace net
 {
 	class CNetWakeup :
 		public INetBase

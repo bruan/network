@@ -3,7 +3,7 @@
 #include "net_accepter.h"
 #include "net_connecter.h"
 
-namespace base
+namespace net
 {
 	void CNetAccepter::onEvent(uint32_t nEvent)
 	{
@@ -15,17 +15,26 @@ namespace base
 			for (uint32_t i = 0; i < 10; ++i)
 			{
 				int32_t nSocketID = (int32_t)::accept(this->GetSocketID(), nullptr, nullptr);
-
+				
 				if (_Invalid_SocketID == nSocketID)
 				{
 					if (getLastError() == NW_EINTR)
 						continue;
-
+#ifndef _WIN32
+					if (getLastError() == EMFILE)
+					{
+						::close(this->m_nIdleID);
+						nSocketID = (int32_t)::accept(this->GetSocketID(), nullptr, nullptr);
+						::close(nSocketID);
+						nSocketID = _Invalid_SocketID;
+						this->m_nIdleID = ::open("/dev/null", O_RDONLY | O_CLOEXEC);
+					}
+#endif
 					if (getLastError() != NW_EWOULDBLOCK
 						&& getLastError() != NW_ECONNABORTED
 						&& getLastError() != NW_EPROTO)
 					{
-						g_pLog->printWarning("NetAccepter::onEvent Error: %d", getLastError());
+						g_pLog->printWarning("CNetAccepter::onEvent Error: %d", getLastError());
 					}
 					break;
 				}
@@ -83,17 +92,32 @@ namespace base
 
 	bool CNetAccepter::init(uint32_t nSendBufferSize, uint32_t nRecvBufferSize, CNetEventLoop* pNetEventLoop)
 	{
-		return CNetSocket::init(nSendBufferSize, nRecvBufferSize, pNetEventLoop);
+		if (!CNetSocket::init(nSendBufferSize, nRecvBufferSize, pNetEventLoop))
+			return false;
+
+#ifndef _WIN32
+		this->m_nIdleID = ::open("/dev/null", O_RDONLY | O_CLOEXEC);
+		if (this->m_nIdleID == 0)
+			return false;
+#endif
+
+		return true;
 	}
 
 	CNetAccepter::CNetAccepter()
 		: m_pHandler(nullptr)
+#ifndef _WIN32
+		, m_nIdleID(0)
+#endif
 	{
 	}
 
 	CNetAccepter::~CNetAccepter()
 	{
 		DebugAst(this->GetSocketID() == _Invalid_SocketID);
+#ifndef _WIN32
+		::close(this->m_nIdleID);
+#endif
 	}
 
 	bool CNetAccepter::listen(const SNetAddr& netAddr)
@@ -106,7 +130,9 @@ namespace base
 			this->forceClose();
 			return false;
 		}
-
+		
+		this->reusePort();
+		
 		if (!this->nonblock())
 		{
 			this->forceClose();

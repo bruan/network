@@ -3,7 +3,7 @@
 #include "net_event_loop.h"
 
 
-namespace base
+namespace net
 {
 	CNetRecvBuffer::CNetRecvBuffer()
 		: m_pBuf(nullptr)
@@ -23,7 +23,7 @@ namespace base
 
 		this->m_nBufSize = nBufSize;
 		this->m_pBuf = new char[nBufSize];
-
+		memset(this->m_pBuf, 0, nBufSize);
 		return true;
 	}
 
@@ -96,6 +96,7 @@ namespace base
 		DebugAstEx(this->m_pBuf == nullptr, false);
 
 		this->m_pBuf = new char[nBufSize];
+		memset(this->m_pBuf, 0, nBufSize);
 		this->m_pBufSize = nBufSize;
 		this->reset();
 

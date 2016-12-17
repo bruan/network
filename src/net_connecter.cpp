@@ -2,7 +2,7 @@
 #include "net_connecter.h"
 #include "net_event_loop.h"
 
-namespace base
+namespace net
 {
 	void CNetConnecter::printInfo(const char* szMsg)
 	{
@@ -206,7 +206,7 @@ namespace base
 			{
 				if (getLastError() == NW_EAGAIN || getLastError() == NW_EWOULDBLOCK)
 					break;
-
+				
 				if (getLastError() == NW_EINTR)
 					continue;
 
@@ -265,11 +265,15 @@ namespace base
 			return false;
 
 		if (!this->nonblock())
+		{
+			this->forceClose();
 			return false;
-		
+		}
 		if (!this->setBufferSize())
+		{
+			this->forceClose();
 			return false;
-
+		}
 		this->m_sRemoteAddr = sNetAddr;
 
 		struct sockaddr_in romateAddr;
@@ -300,7 +304,8 @@ namespace base
 			}
 			else
 			{
-				this->shutdown(true, "connect socket error");
+				g_pLog->printInfo("connect error socket_id: %d remote addr: %s %d err: %d", this->GetSocketID(), this->m_sRemoteAddr.szHost, this->m_sRemoteAddr.nPort, getLastError());
+				CNetSocket::forceClose();
 				return false;
 			}
 		}
@@ -372,7 +377,7 @@ namespace base
 			uint32_t nSendDataSize = this->m_pSendBuffer->getDataSize();
 
 			if (nSendDataSize >= this->getSendBufferSize())
-				this->onEvent(eNET_Send);
+				this->onEvent(eNET_Send); // 这里如果发送不完就会在下一次写事件触发的时候继续发送
 			else
 				this->m_pNetEventLoop->addSendConnecter(this);
 		}
@@ -439,6 +444,11 @@ namespace base
 	uint32_t CNetConnecter::getRecvDataSize() const
 	{
 		return this->m_pRecvBuffer->getDataSize();
+	}
+
+	bool CNetConnecter::setNoDelay(bool bEnable)
+	{
+		return CNetSocket::setNoDelay(bEnable);
 	}
 
 	void CNetConnecter::setConnecterType(ENetConnecterType eConnecterType)

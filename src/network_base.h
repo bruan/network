@@ -24,7 +24,7 @@
 #include <errno.h>
 #endif
 
-namespace base
+namespace net
 {
 
 #ifdef _WIN32
@@ -148,8 +148,8 @@ namespace base
 		eNET_Unknown = 0xff
 	};
 
-#define _SEND_BUF_SIZE	2048
-#define _RECV_BUF_SIZE	2048
+#define _SEND_BUF_SIZE	204800
+#define _RECV_BUF_SIZE	204800
 
 #define	DebugAst(Exp)			do{ if(!(Exp)) { assert(0); return; } } while(0)
 #define	DebugAstEx(Exp, Ret)	do{ if(!(Exp)) { assert(0); return Ret; } } while(0)

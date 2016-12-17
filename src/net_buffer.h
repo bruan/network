@@ -2,7 +2,7 @@
 
 #include <stdint.h>
 
-namespace base
+namespace net
 {
 	class CNetRecvBuffer
 	{

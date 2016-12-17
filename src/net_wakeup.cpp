@@ -5,7 +5,7 @@
 #include <sys/eventfd.h>
 #endif
 
-namespace base
+namespace net
 {
 	CNetWakeup::CNetWakeup()
 		: m_nWakeup(-1)

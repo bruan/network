@@ -50,7 +50,7 @@ struct SNetAddr
 #pragma warning(pop)
 #endif
 
-namespace base
+namespace net
 {
 #ifdef _WIN32
 #	ifdef __BUILD_BASE_NETWORK_DLL__
@@ -102,6 +102,10 @@ namespace base
 		@brief: 获取连接处理器
 		*/
 		INetConnecter*		getNetConnecter() const { return this->m_pNetConnecter; }
+		/**
+		@brief: 发送数据
+		*/
+		inline void			send(const void* pData, uint32_t nSize, bool bCache);
 		/**
 		@brief: 数据到达回调
 		*/
@@ -211,6 +215,10 @@ namespace base
 		@brief: 获取接收缓存区大小
 		*/
 		virtual	uint32_t			getRecvDataSize() const = 0;
+		/**
+		@brief: 设置是否启动tcp协议栈的nodelay算法
+		*/
+		virtual bool				setNoDelay(bool bEnable) = 0;
 	};
 
 	/**
@@ -248,6 +256,13 @@ namespace base
 		virtual void	release() = 0;
 	};
 
+	void INetConnecterHandler::send(const void* pData, uint32_t nSize, bool bCache)
+	{
+		if (this->m_pNetConnecter == nullptr)
+			return;
+		
+		this->m_pNetConnecter->send(pData, nSize, bCache);
+	}
 
 	class INetworkLog
 	{

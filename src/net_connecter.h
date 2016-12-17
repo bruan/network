@@ -4,7 +4,7 @@
 #include "network.h"
 #include "net_buffer.h"
 
-namespace base
+namespace net
 {
 	class CNetConnecter :
 		public INetConnecter,
@@ -35,6 +35,7 @@ namespace base
 		virtual ENetConnecterState	getConnecterState() const;
 		virtual	uint32_t			getSendDataSize() const;
 		virtual	uint32_t			getRecvDataSize() const;
+		virtual bool				setNoDelay(bool bEnable);
 
 		void						printInfo(const char* szMsg);
 		int32_t						getSendConnecterIndex() const;

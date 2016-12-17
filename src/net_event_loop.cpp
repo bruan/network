@@ -6,7 +6,7 @@
 #include "net_buffer.h"
 #include "net_wakeup.h"
 
-namespace base
+namespace net
 {
 	INetworkLog* g_pLog = nullptr;
 

@@ -1,2 +1,3 @@
-add_subdirectory(TestBaseNetwork)
 add_subdirectory(TestHttp)
+add_subdirectory(PingPongClient)
+add_subdirectory(PingPongServer)
