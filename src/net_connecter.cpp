@@ -26,17 +26,20 @@ namespace net
 				return;
 			}
 
-			int32_t err;
-			socklen_t len = sizeof(err);
-#ifdef _WIN32
-			int32_t code = getsockopt(this->GetSocketID(), SOL_SOCKET, SO_ERROR, reinterpret_cast<char*>(&err), (socklen_t*)&len);
-#else
-			int32_t code = getsockopt(this->GetSocketID(), SOL_SOCKET, SO_ERROR, reinterpret_cast<void*>(&err), (socklen_t*)&len);
-#endif
-			if (code < 0 || err != 0)
+			if (this->m_eConnecterState == eNCS_Connecting && this->m_eConnecterType == eNCT_Initiative)
 			{
-				this->shutdown(true, "eNET_Error and SO_ERROR");
-				return;
+				int32_t err;
+				socklen_t len = sizeof(err);
+#ifdef _WIN32
+				int32_t err = getsockopt(this->GetSocketID(), SOL_SOCKET, SO_ERROR, reinterpret_cast<char*>(&err), (socklen_t*)&len);
+#else
+				int32_t err = getsockopt(this->GetSocketID(), SOL_SOCKET, SO_ERROR, reinterpret_cast<void*>(&err), (socklen_t*)&len);
+#endif
+				if (err < 0 || err != 0)
+				{
+					this->shutdown(true, "eNET_Error and SO_ERROR");
+					return;
+				}
 			}
 		}
 		if (eNCS_Connecting == this->m_eConnecterState)

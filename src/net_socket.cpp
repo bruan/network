@@ -12,7 +12,7 @@ namespace net
 		: m_pNetEventLoop(nullptr)
 		, m_nSocketID(_Invalid_SocketID)
 		, m_nSocketIndex(_Invalid_SocketIndex)
-		, m_nEvent(eNET_Recv | eNET_Send)
+		, m_nEvent(eNET_Recv | eNET_Send | eNET_Error)
 		, m_nSendBufferSize(0)
 		, m_nRecvBufferSize(0)
 		, m_bWaitClose(false)

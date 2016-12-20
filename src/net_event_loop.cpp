@@ -150,6 +150,8 @@ namespace net
 				FD_SET(pNetSocket->GetSocketID(), &readfds);
 			if (0 != (pNetSocket->getEvent()&eNET_Send))
 				FD_SET(pNetSocket->GetSocketID(), &writefds);
+			if (0 != (pNetSocket->getEvent()&eNET_Error))
+				FD_SET(pNetSocket->GetSocketID(), &exceptfds);
 		}
 
 		struct timeval timeout;
