@@ -30,14 +30,18 @@ namespace net
 			{
 				int32_t err;
 				socklen_t len = sizeof(err);
-#ifdef _WIN32
-				int32_t err = getsockopt(this->GetSocketID(), SOL_SOCKET, SO_ERROR, reinterpret_cast<char*>(&err), (socklen_t*)&len);
-#else
-				int32_t err = getsockopt(this->GetSocketID(), SOL_SOCKET, SO_ERROR, reinterpret_cast<void*>(&err), (socklen_t*)&len);
-#endif
-				if (err < 0 || err != 0)
+				if (getsockopt(this->GetSocketID(), SOL_SOCKET, SO_ERROR, reinterpret_cast<char*>(&err), (socklen_t*)&len) < 0)
 				{
-					this->shutdown(true, "eNET_Error and SO_ERROR");
+					char szBuf[256] = { 0 };
+					snprintf(szBuf, _countof(szBuf), "SO_ERROR getsockopt error %d", getLastError());
+					this->shutdown(true, szBuf);
+					return;
+				}
+				if (err != 0)
+				{
+					char szBuf[256] = { 0 };
+					snprintf(szBuf, _countof(szBuf), "SO_ERROR error %d", err);
+					this->shutdown(true, szBuf);
 					return;
 				}
 			}
@@ -114,14 +118,18 @@ namespace net
 			{
 				int32_t err;
 				socklen_t len = sizeof(err);
-#ifdef _WIN32
-				int32_t code = getsockopt(this->GetSocketID(), SOL_SOCKET, SO_ERROR, reinterpret_cast<char*>(&err), (socklen_t*)&len);
-#else
-				int32_t code = getsockopt(this->GetSocketID(), SOL_SOCKET, SO_ERROR, reinterpret_cast<void*>(&err), (socklen_t*)&len);
-#endif
-				if (code < 0 || err != 0)
+				if (getsockopt(this->GetSocketID(), SOL_SOCKET, SO_ERROR, reinterpret_cast<char*>(&err), (socklen_t*)&len) < 0)
 				{
-					this->shutdown(true, "SO_ERROR");
+					char szBuf[256] = { 0 };
+					snprintf(szBuf, _countof(szBuf), "SO_ERROR getsockopt error %d", getLastError());
+					this->shutdown(true, szBuf);
+					return;
+				}
+				if (err != 0)
+				{
+					char szBuf[256] = { 0 };
+					snprintf(szBuf, _countof(szBuf), "SO_ERROR error %d", err);
+					this->shutdown(true, szBuf);
 					return;
 				}
 			}

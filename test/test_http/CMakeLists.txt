@@ -12,7 +12,7 @@ set(LINK_LIBS ${BIN_OUTPUT_PATH}/libBaseNetwork.so rt dl)
 # 设置链接选项
 set(CMAKE_EXE_LINKER_FLAGS "-Wl,-rpath=./ ")
 # 生成gate
-add_executable(PingPongClient ${LIST_SRCS})
+add_executable(test_http ${LIST_SRCS})
 
 # 链接库
-target_link_libraries(PingPongClient ${LINK_LIBS})
+target_link_libraries(test_http ${LINK_LIBS})

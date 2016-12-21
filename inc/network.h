@@ -52,14 +52,31 @@ struct SNetAddr
 
 namespace net
 {
+
 #ifdef _WIN32
-#	ifdef __BUILD_BASE_NETWORK_DLL__
-#		define __BASE_NETWORK_API__ __declspec(dllexport)
-#	else
-#		define __BASE_NETWORK_API__ __declspec(dllimport)
-#	endif
+
+#ifdef __BUILD_NETWORK_AS_DLL__
+#ifdef __BUILD_NETWORK__
+#	define __NETWORK_API__ __declspec(dllexport)
 #else
-#	define __BASE_NETWORK_API__
+#	define __NETWORK_API__ __declspec(dllimport)
+#endif
+#else
+#ifdef __BUILD_NETWORK__
+#	define __NETWORK_API__
+#else
+#	define __NETWORK_API__ extern
+#endif
+#endif
+
+#else
+
+#ifdef __BUILD_NETWORK__
+#	define __NETWORK_API__
+#else
+#	define __NETWORK_API__ extern
+#endif
+
 #endif
 
 	enum ENetConnecterState
@@ -273,8 +290,8 @@ namespace net
 		virtual void printWarning(const char* szFormat, ...) = 0;
 	};
 
-	__BASE_NETWORK_API__ bool			startupNetwork(INetworkLog* pNetworkLog);
-	__BASE_NETWORK_API__ void			cleanupNetwork();
+	__NETWORK_API__ bool			startupNetwork(INetworkLog* pNetworkLog);
+	__NETWORK_API__ void			cleanupNetwork();
 
-	__BASE_NETWORK_API__ INetEventLoop*	createNetEventLoop();
+	__NETWORK_API__ INetEventLoop*	createNetEventLoop();
 }
