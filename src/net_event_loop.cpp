@@ -50,6 +50,11 @@ namespace net
 		this->m_nEpoll = epoll_create(nMaxSocketCount / 2);
 		if (this->m_nEpoll < 0)
 			return false;
+
+		// 在fork+execl后关闭父进程继承来的fd
+		int32_t val = fcntl(this->m_nEpoll, F_GETFD);
+		val |= FD_CLOEXEC;
+		fcntl(this->m_nEpoll, F_SETFD, val);
 		
 		this->m_nExtraSocketCount = 1;
 #endif

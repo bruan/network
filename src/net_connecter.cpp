@@ -4,12 +4,18 @@
 
 namespace net
 {
-	void CNetConnecter::printInfo(const char* szMsg)
+	void CNetConnecter::printInfo(const char* szFormat, ...)
 	{
-		if (nullptr == szMsg)
+		if (nullptr == szFormat)
 			return;
 
-		g_pLog->printInfo("%s connect state: %d close type：%d local addr: %s %d remote addr: %s %d socket_id: %d error code[%d] send_index: %d send_count: %d", szMsg, this->m_eConnecterState, this->m_nCloseType, this->getLocalAddr().szHost, this->getLocalAddr().nPort, this->getRemoteAddr().szHost, this->getRemoteAddr().nPort, this->GetSocketID(), getLastError(), this->m_nSendConnecterIndex, this->m_pNetEventLoop->getSendConnecterCount());
+		char szBuf[1024] = { 0 };
+		va_list arg;
+		va_start(arg, szFormat);
+		vsnprintf(szBuf, _countof(szBuf), szFormat, arg);
+		va_end(arg);
+
+		g_pLog->printInfo("%s connect state: %d close type：%d local addr: %s %d remote addr: %s %d socket_id: %d error code[%d] send_index: %d send_count: %d", szBuf, this->m_eConnecterState, this->m_nCloseType, this->getLocalAddr().szHost, this->getLocalAddr().nPort, this->getRemoteAddr().szHost, this->getRemoteAddr().nPort, this->GetSocketID(), getLastError(), this->m_nSendConnecterIndex, this->m_pNetEventLoop->getSendConnecterCount());
 	}
 
 	void CNetConnecter::onEvent(uint32_t nEvent)
@@ -32,16 +38,12 @@ namespace net
 				socklen_t len = sizeof(err);
 				if (getsockopt(this->GetSocketID(), SOL_SOCKET, SO_ERROR, reinterpret_cast<char*>(&err), (socklen_t*)&len) < 0)
 				{
-					char szBuf[256] = { 0 };
-					snprintf(szBuf, _countof(szBuf), "SO_ERROR getsockopt error %d", getLastError());
-					this->shutdown(true, szBuf);
+					this->shutdown(true, "SO_ERROR getsockopt error %d", getLastError());
 					return;
 				}
 				if (err != 0)
 				{
-					char szBuf[256] = { 0 };
-					snprintf(szBuf, _countof(szBuf), "SO_ERROR error %d", err);
-					this->shutdown(true, szBuf);
+					this->shutdown(true, "SO_ERROR error %d", err);
 					return;
 				}
 			}
@@ -67,9 +69,7 @@ namespace net
 		}
 		else
 		{
-			char szMsg[256] = { 0 };
-			snprintf(szMsg, _countof(szMsg), "state error，event：%d", nEvent);
-			this->printInfo(szMsg);
+			this->printInfo("state error，event：%d", nEvent);
 		}
 	}
 
@@ -120,16 +120,12 @@ namespace net
 				socklen_t len = sizeof(err);
 				if (getsockopt(this->GetSocketID(), SOL_SOCKET, SO_ERROR, reinterpret_cast<char*>(&err), (socklen_t*)&len) < 0)
 				{
-					char szBuf[256] = { 0 };
-					snprintf(szBuf, _countof(szBuf), "SO_ERROR getsockopt error %d", getLastError());
-					this->shutdown(true, szBuf);
+					this->shutdown(true, "SO_ERROR getsockopt error %d", getLastError());
 					return;
 				}
 				if (err != 0)
 				{
-					char szBuf[256] = { 0 };
-					snprintf(szBuf, _countof(szBuf), "SO_ERROR error %d", err);
-					this->shutdown(true, szBuf);
+					this->shutdown(true, "SO_ERROR error %d", err);
 					return;
 				}
 			}
@@ -401,18 +397,20 @@ namespace net
 	直接closesocket时，此时发送跟接受都不行，对端会触发recv事件，数据大小为0
 	showdown时,此时发送不行，接收是可以的，对端会触发recv事件，数据大小为0
 	*/
-	void CNetConnecter::shutdown(bool bForce, const char* szMsg)
+	void CNetConnecter::shutdown(bool bForce, const char* szFormat, ...)
 	{
+		DebugAst(szFormat != nullptr);
+
 		if (this->m_eConnecterState == eNCS_Disconnected)
 			return;
 
-		char szBuf[256] = { 0 };
-		if (szMsg != NULL)
-			snprintf(szBuf, _countof(szBuf), "request shutdown connection msg: %s", szMsg);
-		else
-			snprintf(szBuf, _countof(szBuf), "request shutdown connection");
+		char szBuf[1024] = { 0 };
+		va_list arg;
+		va_start(arg, szFormat);
+		vsnprintf(szBuf, _countof(szBuf), szFormat, arg);
+		va_end(arg);
 
-		this->printInfo(szBuf);
+		this->printInfo("request shutdown connection msg: %s", szBuf);
 
 		this->m_eConnecterState = eNCS_Disconnecting;
 		this->m_nCloseType |= eCT_Send;

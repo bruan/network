@@ -203,7 +203,7 @@ namespace net
 		/**
 		@brief: 关闭连接，如果连接当前没有建立最好设置下setHandler( nullptr ) 不然还是会调用INetConnecterHandler的onDisconnect
 		*/
-		virtual void				shutdown(bool bForce, const char* szMsg) = 0;
+		virtual void				shutdown(bool bForce, const char* szFormat, ...) = 0;
 		/**
 		@brief: 设置连接处理器
 		*/

@@ -28,7 +28,7 @@ namespace net
 
 		virtual void				send(const void* pData, uint32_t nDataSize, bool bCache);
 		virtual void				setHandler(INetConnecterHandler* pHandler);
-		virtual void				shutdown(bool bForce, const char* szMsg);
+		virtual void				shutdown(bool bForce, const char* szFormat, ...);
 		virtual const SNetAddr&		getLocalAddr() const;
 		virtual const SNetAddr&		getRemoteAddr() const;
 		virtual ENetConnecterType	getConnecterType() const;
@@ -37,7 +37,7 @@ namespace net
 		virtual	uint32_t			getRecvDataSize() const;
 		virtual bool				setNoDelay(bool bEnable);
 
-		void						printInfo(const char* szMsg);
+		void						printInfo(const char* szFormat, ...);
 		int32_t						getSendConnecterIndex() const;
 		void						setSendConnecterIndex(int32_t nIndex);
 		bool						connect(const SNetAddr& sNetAddr);
