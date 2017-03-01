@@ -139,7 +139,7 @@ namespace http
 					break;
 				}
 
-				std::string& szLength = this->m_request.getHeader("Content-Length");
+				std::string szLength = this->m_request.getHeader("Content-Length");
 				if (szLength.empty())
 				{
 					this->m_nState = ePS_Finish;
