@@ -120,6 +120,7 @@ namespace net
 			CNetConnecter* pNetConnecter = this->m_vecSendConnecter[i];
 			if (nullptr == pNetConnecter)
 				continue;
+
 			pNetConnecter->flushSend();
 			pNetConnecter->setSendConnecterIndex(_Invalid_SendConnecterIndex);
 		}

@@ -140,10 +140,11 @@ namespace net
 			EPOLLERR	socket能检测到对方出错吗？目前为止，好像我还不知道如何检测，但是，在给已经关闭的socket写时，会发生EPOLLERR，也就是说，
 						只有在采取行动（比如读一个已经关闭的socket，或者写一个已经关闭的socket）时候，才知道对方是否关闭了。这个时候如果对方关闭了，
 						则会出现EPOLLERR，EPOLLERR是服务器这边出错
+						EPOLLERR|EPOLLHUP 这两个标记epoll_wait会默认检测，不需要设置
 		*/
-		eNET_Recv	= EPOLLIN,
+		eNET_Recv	= EPOLLIN|POLLPRI,
 		eNET_Send	= EPOLLOUT,
-		eNET_Error	= EPOLLERR|EPOLLHUP,	// 这两个标记epoll_wait会默认检测，不需要设置
+		eNET_Error	= EPOLLERR,
 #endif
 		eNET_Unknown = 0xff
 	};

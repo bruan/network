@@ -20,6 +20,13 @@ namespace net
 
 	void CNetConnecter::onEvent(uint32_t nEvent)
 	{
+#ifndef _WIN32
+		if ((nEvent&POLLHUP) && !(nEvent&POLLIN))
+		{
+			this->shutdown(true, "socket POLLHUP");
+			return;
+		}
+#endif
 		if (nEvent&eNET_Error)
 		{
 #ifdef _WIN32
@@ -138,12 +145,14 @@ namespace net
 				return;
 			}
 			g_pLog->printInfo("connect local addr: %s %d remote addr: %s %d socket_id: %d", this->getLocalAddr().szHost, this->getLocalAddr().nPort, this->getRemoteAddr().szHost, this->getRemoteAddr().nPort, this->GetSocketID());
-			
+
 			if (nullptr != this->m_pHandler)
 				this->m_pHandler->onConnect();
 		}
 		else
+		{
 			this->shutdown(true, "connection state error");
+		}
 	}
 
 	void CNetConnecter::onRecv()
@@ -189,10 +198,6 @@ namespace net
 			this->m_pRecvBuffer->push(nRet);
 			if (nullptr != this->m_pHandler)
 				this->m_pRecvBuffer->pop(this->m_pHandler->onRecv(this->m_pRecvBuffer->getDataBuffer(), this->m_pRecvBuffer->getDataSize()));
-
-			// epoll水平触发模式下，即使此时恰好对端关闭了，等下还是会触发recv事件的，不会导致关闭事件丢失
-			if (nRet != (int32_t)nBufSize)
-				break;
 		}
 	}
 
