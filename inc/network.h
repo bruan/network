@@ -120,7 +120,7 @@ namespace net
 		*/
 		INetConnecter*		getNetConnecter() const { return this->m_pNetConnecter; }
 		/**
-		@brief: 发送数据
+		@brief: 发送数据，对于后端基于帧的服务器可以考虑cache的方式，对于网关服务器，上行包可以考虑cache，下行包直接发送比较好，并且网关服务器最好采用基于事件驱动的方式
 		*/
 		inline void			send(const void* pData, uint32_t nSize, bool bCache);
 		/**
