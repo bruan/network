@@ -294,28 +294,29 @@ namespace net
 		romateAddr.sin_port = htons(this->m_sRemoteAddr.nPort);
 		romateAddr.sin_addr.s_addr = inet_addr(this->m_sRemoteAddr.szHost);
 		memset(romateAddr.sin_zero, 0, sizeof(romateAddr.sin_zero));
-		int32_t nRet = 0;
-		do
-		{
-			nRet = ::connect(this->GetSocketID(), (sockaddr*)&romateAddr, sizeof(romateAddr));
-		} while (nRet != 0 && getLastError() == NW_EINTR);
+
+		// connect因为信号中断的时候不重启
+		int32_t nRet = ::connect(this->GetSocketID(), (sockaddr*)&romateAddr, sizeof(romateAddr));
 
 		if (0 != nRet)
 		{
-#ifdef _WIN32
-			if (getLastError() == NW_EWOULDBLOCK)
-#else
-			if (getLastError() == NW_EINPROGRESS)
-#endif
+			switch (getLastError())
 			{
+#ifdef _WIN32
+			case NW_EWOULDBLOCK:
+#else
+			case NW_EINPROGRESS:
+#endif
+			case NW_EINTR:
+			case NW_EISCONN:
 				// 这个由事件循环回调可写事件通知连接建立
 				this->m_eConnecterType = eNCT_Initiative;
 				this->m_eConnecterState = eNCS_Connecting;
 
 				this->m_pNetEventLoop->addSocket(this);
-			}
-			else
-			{
+				break;
+
+			default:
 				g_pLog->printInfo("connect error socket_id: %d remote addr: %s %d err: %d", this->GetSocketID(), this->m_sRemoteAddr.szHost, this->m_sRemoteAddr.nPort, getLastError());
 				CNetSocket::forceClose();
 				return false;
