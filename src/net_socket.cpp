@@ -209,18 +209,6 @@ namespace net
 		return this->m_nSocketID;
 	}
 
-	void CNetSocket::disableRecv()
-	{
-		if ((this->m_nEvent&eNET_Recv) == 0)
-			return;
-
-		this->m_nEvent &= ~eNET_Recv;
-
-#ifndef _WIN32
-		this->m_pNetEventLoop->updateEpollState(this, EPOLL_CTL_MOD);
-#endif
-	}
-
 	uint32_t CNetSocket::getEvent() const
 	{
 		return this->m_nEvent;

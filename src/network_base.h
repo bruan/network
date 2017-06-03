@@ -120,6 +120,7 @@ namespace net
 #	define NW_EDQUOT			EDQUOT
 #	define NW_ESTALE			ESTALE
 #	define NW_EREMOTE			EREMOTE
+#	define NW_EMFILE			EMFILE
 
 #endif
 
@@ -149,8 +150,8 @@ namespace net
 		eNET_Unknown = 0xff
 	};
 
-#define _SEND_BUF_SIZE	204800
-#define _RECV_BUF_SIZE	204800
+#define _SEND_BUF_SIZE	2048
+#define _RECV_BUF_SIZE	2048
 
 #define	DebugAst(Exp)			do{ if(!(Exp)) { assert(0); return; } } while(0)
 #define	DebugAstEx(Exp, Ret)	do{ if(!(Exp)) { assert(0); return Ret; } } while(0)

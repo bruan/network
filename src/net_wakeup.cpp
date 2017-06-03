@@ -34,7 +34,7 @@ namespace net
 		memset(&event, 0, sizeof(event));
 		event.data.ptr = this;
 		event.events = EPOLLIN;
-		if (epoll_ctl(pNetEventLoop->getEpoll(), EPOLL_CTL_ADD, this->m_nWakeup, &event) < 0)
+		if (::epoll_ctl(pNetEventLoop->getEpoll(), EPOLL_CTL_ADD, this->m_nWakeup, &event) < 0)
 			return false;
 #endif
 
@@ -79,5 +79,4 @@ namespace net
 	{
 		this->m_flag.store(flag, std::memory_order_release);
 	}
-
 }

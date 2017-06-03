@@ -44,7 +44,6 @@ namespace net
 		int32_t			GetSocketID() const;
 		void			setSocketIndex(int32_t nIndex);
 		int32_t			getSocketIndex() const;
-		void			disableRecv();
 		uint32_t		getEvent() const;
 		uint32_t		getSendBufferSize() const;
 		uint32_t		getRecvBufferSize() const;

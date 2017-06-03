@@ -124,7 +124,7 @@ namespace net
 		*/
 		inline void			send(const void* pData, uint32_t nSize, bool bCache);
 		/**
-		@brief: 数据到达回调
+		@brief: 数据到达回调，这个pData必须在回调中消费掉，这个回调结束后pData的有效性不保证
 		*/
 		virtual uint32_t	onRecv(const char* pData, uint32_t nDataSize) = 0;
 		/**
@@ -203,7 +203,7 @@ namespace net
 		/**
 		@brief: 发送数据, 如果是缓存发送的模式，就直接把数据拷贝到网络层的缓存中，不然就是试着发送，发送不了才缓存
 		*/
-		virtual void				send(const void* pData, uint32_t nSize, bool bCache) = 0;
+		virtual bool				send(const void* pData, uint32_t nSize, bool bCache) = 0;
 		/**
 		@brief: 关闭连接，如果连接当前没有建立最好设置下setHandler( nullptr ) 不然还是会调用INetConnecterHandler的onDisconnect
 		*/

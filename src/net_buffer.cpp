@@ -2,13 +2,13 @@
 #include "net_buffer.h"
 #include "net_event_loop.h"
 
-
 namespace net
 {
 	CNetRecvBuffer::CNetRecvBuffer()
 		: m_pBuf(nullptr)
 		, m_nBufSize(0)
-		, m_nBufPos(0)
+		, m_nWritePos(0)
+		, m_nReadPos(0)
 	{
 	}
 
@@ -23,7 +23,7 @@ namespace net
 
 		this->m_nBufSize = nBufSize;
 		this->m_pBuf = new char[nBufSize];
-		memset(this->m_pBuf, 0, nBufSize);
+
 		return true;
 	}
 
@@ -32,34 +32,42 @@ namespace net
 		DebugAst(nSize > this->m_nBufSize);
 
 		char* pNewBuf = new char[nSize];
-		memcpy(pNewBuf, this->m_pBuf, this->m_nBufPos);
+		memcpy(pNewBuf, this->m_pBuf + this->m_nReadPos, this->m_nWritePos - this->m_nReadPos);
 		this->m_nBufSize = nSize;
+		this->m_nWritePos = this->m_nWritePos - this->m_nReadPos;
+		this->m_nReadPos = 0;
 		delete []this->m_pBuf;
 		this->m_pBuf = pNewBuf;
 	}
 
 	void CNetRecvBuffer::push(uint32_t nSize)
 	{
-		DebugAst(nSize <= this->getFreeSize());
+		DebugAst(nSize <= this->getWritableSize());
 
-		this->m_nBufPos += nSize;
+		this->m_nWritePos += nSize;
 	}
 
 	void CNetRecvBuffer::pop(uint32_t nSize)
 	{
-		DebugAst(nSize <= this->getDataSize());
-		this->m_nBufPos = (this->m_nBufPos - nSize);
-		memmove(this->m_pBuf, this->m_pBuf + nSize, this->m_nBufPos);
+		DebugAst(nSize <= this->getReadableSize());
+		this->m_nReadPos += nSize;
+		if (this->m_nReadPos > this->m_nBufSize / 2)
+		{
+			if (this->m_nWritePos - this->m_nReadPos != 0)
+				memmove(this->m_pBuf, this->m_pBuf + this->m_nReadPos, this->m_nWritePos - this->m_nReadPos);
+			this->m_nWritePos = this->m_nWritePos - this->m_nReadPos;
+			this->m_nReadPos = 0;
+		}
 	}
 
-	char* CNetRecvBuffer::getFreeBuffer() const
+	char* CNetRecvBuffer::getWritableBuffer() const
 	{
-		return this->m_pBuf + this->m_nBufPos;
+		return this->m_pBuf + this->m_nWritePos;
 	}
 
-	char* CNetRecvBuffer::getDataBuffer() const
+	char* CNetRecvBuffer::getReadableBuffer() const
 	{
-		return this->m_pBuf;
+		return this->m_pBuf + this->m_nReadPos;
 	}
 
 	uint32_t CNetRecvBuffer::getBufferSize() const
@@ -67,21 +75,21 @@ namespace net
 		return this->m_nBufSize;
 	}
 
-	uint32_t CNetRecvBuffer::getDataSize() const
+	uint32_t CNetRecvBuffer::getReadableSize() const
 	{
-		return this->m_nBufPos;
+		return this->m_nWritePos - this->m_nReadPos;
 	}
 
-	uint32_t CNetRecvBuffer::getFreeSize() const
+	uint32_t CNetRecvBuffer::getWritableSize() const
 	{
-		return this->m_nBufSize - this->m_nBufPos;
+		return this->m_nBufSize - this->m_nWritePos;
 	}
 
 	CNetSendBufferBlock::CNetSendBufferBlock()
 		: m_pBuf(nullptr)
 		, m_pNext(nullptr)
-		, m_nDataBegin(0)
-		, m_nDataEnd(0)
+		, m_nReadPos(0)
+		, m_nWritePos(0)
 		, m_pBufSize(0)
 	{
 	}
@@ -96,7 +104,6 @@ namespace net
 		DebugAstEx(this->m_pBuf == nullptr, false);
 
 		this->m_pBuf = new char[nBufSize];
-		memset(this->m_pBuf, 0, nBufSize);
 		this->m_pBufSize = nBufSize;
 		this->reset();
 
@@ -105,29 +112,29 @@ namespace net
 
 	void CNetSendBufferBlock::reset()
 	{
-		this->m_nDataEnd = 0;
-		this->m_nDataBegin = 0;
+		this->m_nWritePos = 0;
+		this->m_nReadPos = 0;
 		this->m_pNext = nullptr;
 	}
 
 	void CNetSendBufferBlock::push(const char* pBuf, uint32_t nSize)
 	{
-		DebugAst(nSize <= this->getFreeSize());
+		DebugAst(nSize <= this->getWritableSize());
 
-		memcpy(this->m_pBuf + this->m_nDataEnd, pBuf, nSize);
-		this->m_nDataEnd += nSize;
+		memcpy(this->m_pBuf + this->m_nWritePos, pBuf, nSize);
+		this->m_nWritePos += nSize;
 	}
 
 	void CNetSendBufferBlock::pop(uint32_t nSize)
 	{
-		DebugAst(nSize <= this->getDataSize());
+		DebugAst(nSize <= this->getReadableSize());
 
-		this->m_nDataBegin += nSize;
+		this->m_nReadPos += nSize;
 	}
 
-	char* CNetSendBufferBlock::getDataBuffer() const
+	char* CNetSendBufferBlock::getReadableBuffer() const
 	{
-		return this->m_pBuf + this->m_nDataBegin;
+		return this->m_pBuf + this->m_nReadPos;
 	}
 
 	uint32_t CNetSendBufferBlock::getBufferSize() const
@@ -135,14 +142,14 @@ namespace net
 		return this->m_pBufSize;
 	}
 
-	uint32_t CNetSendBufferBlock::getDataSize() const
+	uint32_t CNetSendBufferBlock::getReadableSize() const
 	{
-		return this->m_nDataEnd - this->m_nDataBegin;
+		return this->m_nWritePos - this->m_nReadPos;
 	}
 
-	uint32_t CNetSendBufferBlock::getFreeSize() const
+	uint32_t CNetSendBufferBlock::getWritableSize() const
 	{
-		return this->m_pBufSize - this->m_nDataEnd;
+		return this->m_pBufSize - this->m_nWritePos;
 	}
 
 	CNetSendBuffer::CNetSendBuffer()
@@ -223,16 +230,16 @@ namespace net
 		}
 		while (true)
 		{
-			if (this->m_pHead->getFreeSize() >= nSize)
+			if (this->m_pHead->getWritableSize() >= nSize)
 			{
 				this->m_pHead->push(pBuf, nSize);
 				break;
 			}
 			else
 			{
-				uint32_t nFreeSize = this->m_pHead->getFreeSize();
+				uint32_t nFreeSize = this->m_pHead->getWritableSize();
 				nSize -= nFreeSize;
-				this->m_pHead->push(pBuf, this->m_pHead->getFreeSize());
+				this->m_pHead->push(pBuf, this->m_pHead->getWritableSize());
 				pBuf += nFreeSize;
 				CNetSendBufferBlock* pNewSendBufferBlock = this->getBufferBlock();
 				pNewSendBufferBlock->m_pNext = this->m_pHead;
@@ -243,10 +250,10 @@ namespace net
 
 	void CNetSendBuffer::pop(uint32_t nSize)
 	{
-		DebugAst(nSize <= this->m_pTail->getDataSize());
+		DebugAst(nSize <= this->m_pTail->getReadableSize());
 
 		this->m_pTail->pop(nSize);
-		if (this->m_pTail->getDataSize() == 0)
+		if (this->m_pTail->getReadableSize() == 0)
 		{
 			this->putBufferBlock(this->m_pTail);
 			if (this->m_pTail != this->m_pHead)
@@ -268,34 +275,30 @@ namespace net
 		}
 	}
 
-	char* CNetSendBuffer::getDataBuffer(uint32_t& nSize) const
+	char* CNetSendBuffer::getTailData() const
 	{
 		if (nullptr == this->m_pTail)
-		{
-			nSize = 0;
 			return nullptr;
-		}
 
-		nSize = this->m_pTail->getDataSize();
-
-		return this->m_pTail->getDataBuffer();
+		return this->m_pTail->getReadableBuffer();
 	}
 
-	uint32_t CNetSendBuffer::getDataSize() const
+	uint32_t CNetSendBuffer::getTailDataSize() const
+	{
+		if (nullptr == this->m_pTail)
+			return 0;
+
+		return this->m_pTail->getReadableSize();
+	}
+
+	uint32_t CNetSendBuffer::getTotalReadableSize() const
 	{
 		uint32_t nDataSize = 0;
 		for (CNetSendBufferBlock* pSendBufferBlock = this->m_pHead; pSendBufferBlock != nullptr; pSendBufferBlock = pSendBufferBlock->m_pNext)
 		{
-			nDataSize += pSendBufferBlock->getDataSize();
+			nDataSize += pSendBufferBlock->getReadableSize();
 		}
 
 		return nDataSize;
-	}
-
-	bool CNetSendBuffer::isEmpty() const
-	{
-		uint32_t nSize = 0;
-		this->getDataBuffer(nSize);
-		return nSize == 0;
 	}
 }

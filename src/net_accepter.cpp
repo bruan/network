@@ -21,8 +21,9 @@ namespace net
 					if (getLastError() == NW_EINTR)
 						continue;
 #ifndef _WIN32
-					if (getLastError() == EMFILE)
+					if (getLastError() == NW_EMFILE)
 					{
+						// 这么做主要是为了解决在fd数量不足时，有丢弃这个新的连接机会
 						::close(this->m_nIdleID);
 						nSocketID = (int32_t)::accept(this->GetSocketID(), nullptr, nullptr);
 						::close(nSocketID);

@@ -124,6 +124,7 @@ public:
 
 	void onDispatch(const message_header* pHeader)
 	{
+		std::cout << "onDispatch" << std::endl;
 		this->m_pNetConnecter->send(pHeader, pHeader->nMessageSize, false);
 	}
 

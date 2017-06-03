@@ -26,7 +26,7 @@ namespace net
 		virtual void				forceClose();
 		virtual bool				init(uint32_t nSendBufferSize, uint32_t nRecvBufferSize, CNetEventLoop* pNetEventLoop);
 
-		virtual void				send(const void* pData, uint32_t nDataSize, bool bCache);
+		virtual bool				send(const void* pData, uint32_t nDataSize, bool bCache);
 		virtual void				setHandler(INetConnecterHandler* pHandler);
 		virtual void				shutdown(bool bForce, const char* szFormat, ...);
 		virtual const SNetAddr&		getLocalAddr() const;
@@ -58,5 +58,6 @@ namespace net
 		CNetSendBuffer*			m_pSendBuffer;
 		INetConnecterHandler*	m_pHandler;
 		uint32_t				m_nSendConnecterIndex;
+		bool					m_bEnableSend;
 	};
 }

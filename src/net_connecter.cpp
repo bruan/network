@@ -72,7 +72,10 @@ namespace net
 			}
 
 			if (nEvent&eNET_Send)
+			{
+				this->m_bEnableSend = true;
 				this->onSend();
+			}
 		}
 		else
 		{
@@ -159,14 +162,14 @@ namespace net
 	{
 		while (true)
 		{
-			uint32_t nBufSize = this->m_pRecvBuffer->getFreeSize();
+			uint32_t nBufSize = this->m_pRecvBuffer->getWritableSize();
 			if (0 == nBufSize)
 			{
 				this->m_pRecvBuffer->resize(this->m_pRecvBuffer->getBufferSize() * 2);
-				nBufSize = this->m_pRecvBuffer->getFreeSize();
+				nBufSize = this->m_pRecvBuffer->getWritableSize();
 				g_pLog->printInfo("not have enought recv buffer append size to: %d", this->m_pRecvBuffer->getBufferSize());
 			}
-			char* pBuf = this->m_pRecvBuffer->getFreeBuffer();
+			char* pBuf = this->m_pRecvBuffer->getWritableBuffer();
 #ifdef _WIN32
 			int32_t nRet = ::recv(this->GetSocketID(), pBuf, (int32_t)nBufSize, MSG_NOSIGNAL);
 #else
@@ -177,11 +180,18 @@ namespace net
 			{
 				this->printInfo("remote connection is close");
 				this->m_nCloseType |= eCT_Recv;
+
 				// 为了防止出现连接一边关闭了，但是尚有数据未发送完，一直触发可读事件
-				this->disableRecv();
+				if ((this->m_nEvent&eNET_Recv) != 0)
+				{
+					this->m_nEvent &= ~eNET_Recv;
+#ifndef _WIN32
+					this->m_pNetEventLoop->updateEpollState(this, EPOLL_CTL_MOD);
+#endif
+				}
 				if (this->m_eConnecterState == eNCS_Connected)
 					this->shutdown(false, "remote connection is close");
-				
+
 				break;
 			}
 			else if (nRet < 0)
@@ -197,7 +207,10 @@ namespace net
 			}
 			this->m_pRecvBuffer->push(nRet);
 			if (nullptr != this->m_pHandler)
-				this->m_pRecvBuffer->pop(this->m_pHandler->onRecv(this->m_pRecvBuffer->getDataBuffer(), this->m_pRecvBuffer->getDataSize()));
+			{
+				uint32_t nSize = this->m_pHandler->onRecv(this->m_pRecvBuffer->getReadableBuffer(), this->m_pRecvBuffer->getReadableSize());
+				this->m_pRecvBuffer->pop(nSize);
+			}
 		}
 	}
 
@@ -205,20 +218,22 @@ namespace net
 	{
 		while (true)
 		{
-			uint32_t nBufSize = 0;
-			char* pData = this->m_pSendBuffer->getDataBuffer(nBufSize);
-			if (0 == nBufSize)
+			uint32_t nDataSize = this->m_pSendBuffer->getTailDataSize();
+			char* pData = this->m_pSendBuffer->getTailData();
+			if (0 == nDataSize)
 				break;
 #ifdef _WIN32
-			int32_t nRet = ::send(this->GetSocketID(), pData, (int32_t)nBufSize, MSG_NOSIGNAL);
+			int32_t nRet = ::send(this->GetSocketID(), pData, (int32_t)nDataSize, MSG_NOSIGNAL);
 #else
-			int32_t nRet = ::write(this->GetSocketID(), pData, nBufSize);
+			int32_t nRet = ::write(this->GetSocketID(), pData, nDataSize);
 #endif
 			if (SOCKET_ERROR == nRet)
 			{
 				if (getLastError() == NW_EAGAIN || getLastError() == NW_EWOULDBLOCK)
+				{
+					this->m_bEnableSend = false;
 					break;
-				
+				}
 				if (getLastError() == NW_EINTR)
 					continue;
 
@@ -229,16 +244,12 @@ namespace net
 			if (this->m_pHandler != nullptr)
 				this->m_pHandler->onSendComplete((uint32_t)nRet);
 
-			if (nRet != (int32_t)nBufSize)
+			if (nRet != (int32_t)nDataSize)
 				break;
 		}
-		uint32_t nBufSize = 0;
-		this->m_pSendBuffer->getDataBuffer(nBufSize);
-		if (0 == nBufSize)
-		{
-			if (eNCS_Disconnecting == this->m_eConnecterState)
-				this->close();
-		}
+		
+		if (eNCS_Disconnecting == this->m_eConnecterState && this->m_pSendBuffer->getTailDataSize() == 0)
+			this->close();
 	}
 
 	void CNetConnecter::flushSend()
@@ -250,18 +261,20 @@ namespace net
 		: m_eConnecterType(eNCT_Unknown)
 		, m_eConnecterState(eNCS_Disconnected)
 		, m_nCloseType(eCT_None)
-		, m_pHandler(nullptr)
 		, m_nSendConnecterIndex(_Invalid_SendConnecterIndex)
+		, m_pHandler(nullptr)
 		, m_pRecvBuffer(nullptr)
 		, m_pSendBuffer(nullptr)
+		, m_bEnableSend(true)
 	{
 	}
 
 	CNetConnecter::~CNetConnecter()
 	{
-		DebugAst(this->getConnecterState() == eNCS_Disconnected);
 		delete this->m_pSendBuffer;
 		delete this->m_pRecvBuffer;
+
+		DebugAst(this->getConnecterState() == eNCS_Disconnected);
 	}
 
 	int32_t CNetConnecter::getSendConnecterIndex() const
@@ -336,19 +349,16 @@ namespace net
 		return true;
 	}
 
-	void CNetConnecter::send(const void* pData, uint32_t nDataSize, bool bCache)
+	bool CNetConnecter::send(const void* pData, uint32_t nDataSize, bool bCache)
 	{
 		if (eNCS_Connecting == this->m_eConnecterState
 		|| eNCS_Disconnected == this->m_eConnecterState
 		|| (eNCS_Disconnecting == this->m_eConnecterState && (eCT_Send&this->m_nCloseType) != 0))
-			return;
+			return false;
 
 		if (!bCache)
 		{
-			if (!this->m_pSendBuffer->isEmpty())
-				this->onEvent(eNET_Send);
-
-			if (this->m_pSendBuffer->isEmpty())
+			if (this->m_pSendBuffer->getTailDataSize() == 0 && this->m_bEnableSend)
 			{
 				int32_t nRet = 0;
 				do
@@ -365,13 +375,14 @@ namespace net
 					if (getLastError() != NW_EAGAIN && getLastError() != NW_EWOULDBLOCK)
 					{
 						this->shutdown(true, "send data error");
-						return;
+						return false;
 					}
 
+					this->m_bEnableSend = false;
 					nRet = 0;
 				}
 
-				DebugAst(nRet <= (int32_t)nDataSize);
+				DebugAstEx(nRet <= (int32_t)nDataSize, false);
 
 				if (nRet != (int32_t)nDataSize)
 				{
@@ -383,20 +394,22 @@ namespace net
 			else
 			{
 				this->m_pSendBuffer->push(reinterpret_cast<const char*>(pData), nDataSize);
-				// 这里不需要添加到发送列表，epoll写事件会处理
+				// 这里不需要添加到发送列表，要不上面不没有cache发送时没有全部发送出去导致剩余，这个会有epoll写事件触发，要不下面cache发送已经添加到写列表中了。
 				//this->m_pNetEventLoop->addSendConnecter(this);
 			}
 		}
 		else 
 		{
 			this->m_pSendBuffer->push(reinterpret_cast<const char*>(pData), nDataSize);
-			uint32_t nSendDataSize = this->m_pSendBuffer->getDataSize();
+			uint32_t nSendDataSize = this->m_pSendBuffer->getTotalReadableSize();
 
-			if (nSendDataSize >= this->getSendBufferSize())
+			if (nSendDataSize >= this->getSendBufferSize() && this->m_bEnableSend)
 				this->onEvent(eNET_Send); // 这里如果发送不完就会在下一次写事件触发的时候继续发送
 			else
 				this->m_pNetEventLoop->addSendConnecter(this);
 		}
+
+		return true;
 	}
 
 	/*	关于连接关闭:
@@ -423,7 +436,7 @@ namespace net
 
 		this->m_eConnecterState = eNCS_Disconnecting;
 		this->m_nCloseType |= eCT_Send;
-		if (bForce || this->m_pSendBuffer->isEmpty())
+		if (bForce || this->m_pSendBuffer->getTailDataSize() == 0)
 			this->close();
 	}
 
@@ -456,12 +469,12 @@ namespace net
 
 	uint32_t CNetConnecter::getSendDataSize() const
 	{
-		return this->m_pSendBuffer->getDataSize();
+		return this->m_pSendBuffer->getTotalReadableSize();
 	}
 
 	uint32_t CNetConnecter::getRecvDataSize() const
 	{
-		return this->m_pRecvBuffer->getDataSize();
+		return this->m_pRecvBuffer->getReadableSize();
 	}
 
 	bool CNetConnecter::setNoDelay(bool bEnable)
