@@ -17,6 +17,7 @@
 #endif
 
 #include <iostream>
+#include <thread>
 using namespace std;
 
 #pragma pack(push,1)
@@ -117,6 +118,10 @@ public:
 		return nRecvSize;
 	}
 
+	virtual void onSendComplete(uint32_t nSize)
+	{
+	}
+
 	void onDispatch(const message_header* pHeader)
 	{
 		this->m_pNetConnecter->send(pHeader, pHeader->nMessageSize, false);
@@ -144,15 +149,6 @@ public:
 #pragma warning(push)
 #pragma warning(disable:4996)
 #endif
-
-void __sleep(uint32_t milliseconds)
-{
-#ifdef _WIN32
-	::Sleep(milliseconds);
-#else
-	usleep(milliseconds * 1000);
-#endif
-}
 
 #define _MAX_SOCKET_COUNT 200000
 
@@ -200,7 +196,7 @@ int main(int argc, char* argv[])
 	for (size_t i = 0; i < nCount; ++i)
 	{
 		pNetEventLoop->connect(netAddr, 1024, 1024, new CNetConnecterHandler());
-		__sleep(10);
+		std::this_thread::sleep_for(std::chrono::milliseconds(10));
 	}
 
 	while (true)

@@ -6,6 +6,8 @@
 #include "net_buffer.h"
 #include "net_wakeup.h"
 
+#include <thread>
+
 namespace net
 {
 	INetworkLog* g_pLog = nullptr;
@@ -132,7 +134,7 @@ namespace net
 		if (this->m_nSocketCount == 0)
 		{
 			// 为了让windows洗没有任何socket时不死跑，这里sleep下
-			Sleep((uint32_t)nTime);
+			std::this_thread::sleep_for(std::chrono::milliseconds(nTime));
 			return;
 		}
 
@@ -163,7 +165,7 @@ namespace net
 		struct timeval timeout;
 		timeout.tv_sec = (int32_t)((nTime * 1000) / 1000000);
 		timeout.tv_usec = (int32_t)((nTime * 1000) % 1000000);
-		int32_t nRet = select(0, &readfds, &writefds, &exceptfds, &timeout);
+		int32_t nRet = ::select(0, &readfds, &writefds, &exceptfds, &timeout);
 		if (SOCKET_ERROR == nRet)
 		{
 			g_pLog->printWarning("select error %d ", getLastError());
@@ -196,7 +198,7 @@ namespace net
 				return;
 
 			this->m_pWakeup->wait(true);
-			int32_t nActiveCount = epoll_wait(this->m_nEpoll, &this->m_vecEpollEvent[0], this->m_vecEpollEvent.size(), nTime);
+			int32_t nActiveCount = ::epoll_wait(this->m_nEpoll, &this->m_vecEpollEvent[0], this->m_vecEpollEvent.size(), nTime);
 			this->m_pWakeup->wait(false);
 			if (nActiveCount >= 0)
 			{
@@ -228,7 +230,7 @@ namespace net
 		memset(&event, 0, sizeof(event));
 		event.data.ptr = pNetSocket;
 		event.events = pNetSocket->getEvent();
-		if (epoll_ctl(this->m_nEpoll, nOperator, pNetSocket->GetSocketID(), &event) < 0)
+		if (::epoll_ctl(this->m_nEpoll, nOperator, pNetSocket->GetSocketID(), &event) < 0)
 			g_pLog->printWarning("epoll_ctl error operator = %d error %d", nOperator, getLastError());
 	}
 

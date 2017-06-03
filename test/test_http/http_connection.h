@@ -13,6 +13,7 @@ namespace http
 		virtual ~CHttpConnection();
 
 		virtual uint32_t	onRecv(const char* pData, uint32_t nDataSize);
+		virtual void		onSendComplete(uint32_t nSize) { }
 		virtual void		onConnect();
 		virtual void		onDisconnect();
 

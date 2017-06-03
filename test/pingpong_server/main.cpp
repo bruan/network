@@ -59,6 +59,10 @@ public:
 		return nRecvSize;
 	}
 
+	virtual void onSendComplete(uint32_t nSize)
+	{
+	}
+
 	void onDispatch(const message_header* pHeader)
 	{
 		this->m_pNetConnecter->send(pHeader, pHeader->nMessageSize, false);

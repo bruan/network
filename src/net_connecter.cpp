@@ -226,6 +226,9 @@ namespace net
 				break;
 			}
 			this->m_pSendBuffer->pop(nRet);
+			if (this->m_pHandler != nullptr)
+				this->m_pHandler->onSendComplete((uint32_t)nRet);
+
 			if (nRet != (int32_t)nBufSize)
 				break;
 		}

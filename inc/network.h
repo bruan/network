@@ -101,8 +101,6 @@ namespace net
 	/**
 	@brief: 网络连接处理器
 	连接的超时机制需要逻辑层去处理，如果数据一直发送不了，或者连接已经是断开连接中，确迟迟无法全部断开，很可能是数据一直发送不了导致的，这个时候应该踢掉连接
-	另外不提供发送数据反馈，因为发送成功这个事情很迷离，仅仅代表数据被拷贝到了socket缓存中了，并不保证数据一定到达对端，即使到达对端也不保证一定被应用层处理，
-	因为中间可能断线，所以返回数据被发送这种事情还是留给应用层去处理吧。
 	*/
 	class INetConnecterHandler
 	{
@@ -129,6 +127,10 @@ namespace net
 		@brief: 数据到达回调
 		*/
 		virtual uint32_t	onRecv(const char* pData, uint32_t nDataSize) = 0;
+		/**
+		@brief: 数据发送完成回调（仅仅是发送到了socket缓存中，并不代表发送到对端，更别说被对方应用层处理，所以要准确的反馈数据被对方接收的事情需要应用层取处理）
+		*/
+		virtual void		onSendComplete(uint32_t nSize) = 0;
 		/**
 		@brief: 连接完成回调
 		*/
