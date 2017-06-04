@@ -62,11 +62,13 @@ namespace net
 				}
 			}
 		}
+
 		switch (this->m_eConnecterState)
 		{
 		case eNCS_Connecting:
 			if (eNET_Send&nEvent)
 				this->onConnect();
+
 			break;
 
 		case eNCS_Connected:
@@ -80,10 +82,8 @@ namespace net
 			}
 
 			if (nEvent&eNET_Send)
-			{
-				this->m_nFlag &= ~eNCF_DisableWrite;
 				this->onSend();
-			}
+
 			break;
 
 		default:
@@ -234,12 +234,16 @@ namespace net
 
 	void CNetConnecter::onSend()
 	{
+		this->m_nFlag &= ~eNCF_DisableWrite;
+
+		uint32_t nTotalDataSize = this->m_pSendBuffer->getTotalReadableSize();
 		while (true)
 		{
 			uint32_t nDataSize = this->m_pSendBuffer->getTailDataSize();
 			char* pData = this->m_pSendBuffer->getTailData();
 			if (0 == nDataSize)
 				break;
+
 #ifdef _WIN32
 			int32_t nRet = ::send(this->GetSocketID(), pData, (int32_t)nDataSize, MSG_NOSIGNAL);
 #else
@@ -259,12 +263,13 @@ namespace net
 				break;
 			}
 			this->m_pSendBuffer->pop(nRet);
-			if (this->m_pHandler != nullptr)
-				this->m_pHandler->onSendComplete((uint32_t)nRet);
 
 			if (nRet != (int32_t)nDataSize)
 				break;
 		}
+
+		if (nTotalDataSize != 0 && this->m_pSendBuffer->getTailDataSize() == 0 && this->m_pHandler != nullptr)
+			this->m_pHandler->onSendComplete(nTotalDataSize);
 		
 		if (eNCS_Disconnecting == this->m_eConnecterState && this->m_pSendBuffer->getTailDataSize() == 0)
 			this->close();
@@ -369,13 +374,13 @@ namespace net
 	bool CNetConnecter::send(const void* pData, uint32_t nDataSize, bool bCache)
 	{
 		if (eNCS_Connecting == this->m_eConnecterState
-		|| eNCS_Disconnected == this->m_eConnecterState
-		|| (eNCS_Disconnecting == this->m_eConnecterState && (this->m_nFlag&eNCF_CloseSend) != 0))
+			|| eNCS_Disconnected == this->m_eConnecterState
+			|| (eNCS_Disconnecting == this->m_eConnecterState && (this->m_nFlag&eNCF_CloseSend) != 0))
 			return false;
 
 		if (!bCache)
 		{
-			if (this->m_pSendBuffer->getTailDataSize() == 0 && (this->m_nFlag&eNCF_DisableWrite) == 0)
+			if (this->m_pSendBuffer->getTailDataSize() == 0)
 			{
 				int32_t nRet = 0;
 				do
@@ -402,21 +407,24 @@ namespace net
 				DebugAstEx(nRet <= (int32_t)nDataSize, false);
 
 				if (nRet != (int32_t)nDataSize)
-				{
 					this->m_pSendBuffer->push(reinterpret_cast<const char*>(pData)+nRet, nDataSize - nRet);
-					// 这里不需要添加到发送列表，epoll写事件会处理
-					//this->m_pNetEventLoop->addSendConnecter(this);
-				}
+				else if (this->m_pHandler != nullptr)
+					this->m_pHandler->onSendComplete(nDataSize);
 			}
 			else
 			{
 				this->m_pSendBuffer->push(reinterpret_cast<const char*>(pData), nDataSize);
-				// 这里不需要添加到发送列表，要不上面不没有cache发送时没有全部发送出去导致剩余，这个会有epoll写事件触发，要不下面cache发送已经添加到写列表中了。
-				//this->m_pNetEventLoop->addSendConnecter(this);
+				// 如果没有做小包优化的话下面语句是没有必要的，因为肯定 != 0
+				if ((this->m_nFlag&eNCF_DisableWrite) == 0)
+					this->onSend();
 			}
 		}
-		else 
+		else
 		{
+			// 大包并且缓存中没有数据试着直接发送
+			if (this->m_pSendBuffer->getTailDataSize() == 0 && nDataSize >= this->getSendBufferSize())
+				return this->send(pData, nDataSize, false);
+			
 			this->m_pSendBuffer->push(reinterpret_cast<const char*>(pData), nDataSize);
 			uint32_t nSendDataSize = this->m_pSendBuffer->getTotalReadableSize();
 
