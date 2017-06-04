@@ -139,6 +139,10 @@ namespace net
 		@brief: 连接断开回调
 		*/
 		virtual void		onDisconnect() = 0;
+		/**
+		@brief: 主动连接失败
+		*/
+		virtual void		onConnectFail() = 0;
 	};
 
 	class INetAccepter;

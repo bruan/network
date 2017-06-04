@@ -10,78 +10,78 @@ namespace net
 		if (nEvent&eNET_Error)
 			g_pLog->printInfo("CNetAccepter eNET_Error");
 
-		if (eNET_Recv&nEvent)
+		if ((eNET_Recv&nEvent) == 0)
+			return;
+
+		for (uint32_t i = 0; i < 10; ++i)
 		{
-			for (uint32_t i = 0; i < 10; ++i)
+			int32_t nSocketID = (int32_t)::accept(this->GetSocketID(), nullptr, nullptr);
+
+			if (_Invalid_SocketID == nSocketID)
 			{
-				int32_t nSocketID = (int32_t)::accept(this->GetSocketID(), nullptr, nullptr);
-				
-				if (_Invalid_SocketID == nSocketID)
-				{
-					if (getLastError() == NW_EINTR)
-						continue;
+				if (getLastError() == NW_EINTR)
+					continue;
 #ifndef _WIN32
-					if (getLastError() == NW_EMFILE)
-					{
-						// 这么做主要是为了解决在fd数量不足时，有丢弃这个新的连接机会
-						::close(this->m_nIdleID);
-						nSocketID = (int32_t)::accept(this->GetSocketID(), nullptr, nullptr);
-						::close(nSocketID);
-						nSocketID = _Invalid_SocketID;
-						this->m_nIdleID = ::open("/dev/null", O_RDONLY | O_CLOEXEC);
-					}
+				if (getLastError() == NW_EMFILE)
+				{
+					// 这么做主要是为了解决在fd数量不足时，有丢弃这个新的连接机会
+					::close(this->m_nIdleID);
+					nSocketID = (int32_t)::accept(this->GetSocketID(), nullptr, nullptr);
+					::close(nSocketID);
+					nSocketID = _Invalid_SocketID;
+					this->m_nIdleID = ::open("/dev/null", O_RDONLY | O_CLOEXEC);
+				}
 #endif
-					if (getLastError() != NW_EWOULDBLOCK
-						&& getLastError() != NW_ECONNABORTED
-						&& getLastError() != NW_EPROTO)
-					{
-						g_pLog->printWarning("CNetAccepter::onEvent Error: %d", getLastError());
-					}
-					break;
-				}
-
-				if (this->m_pNetEventLoop->getSocketCount() >= this->m_pNetEventLoop->getMaxSocketCount())
+				if (getLastError() != NW_EWOULDBLOCK
+					&& getLastError() != NW_ECONNABORTED
+					&& getLastError() != NW_EPROTO)
 				{
-					g_pLog->printWarning("out of max connection[%d]", this->m_pNetEventLoop->getMaxSocketCount());
-					closesocket(nSocketID);
-					break;
+					g_pLog->printWarning("CNetAccepter::onEvent Error: %d", getLastError());
 				}
-
-				g_pLog->printInfo("new connection accept listen addr: %s %d cur connection[%d]", this->getListenAddr().szHost, this->getListenAddr().nPort, this->m_pNetEventLoop->getSocketCount());
-
-				CNetConnecter* pNetConnecter = new CNetConnecter();
-				if (!pNetConnecter->init(this->getSendBufferSize(), this->getRecvBufferSize(), this->m_pNetEventLoop))
-				{
-					delete pNetConnecter;
-					closesocket(nSocketID);
-					continue;
-				}
-				pNetConnecter->setSocketID(nSocketID);
-				pNetConnecter->setLocalAddr();
-				pNetConnecter->setRemoteAddr();
-				pNetConnecter->setConnecterType(eNCT_Passive);
-				pNetConnecter->setConnecterState(eNCS_Connecting);
-				if (!pNetConnecter->nonblock())
-				{
-					pNetConnecter->shutdown(true, "set non block error");
-					continue;
-				}
-				INetConnecterHandler* pHandler = this->m_pHandler->onAccept(pNetConnecter);
-				if (nullptr == pHandler)
-				{
-					pNetConnecter->shutdown(true, "create hander error");
-					continue;
-				}
-				if (!this->m_pNetEventLoop->addSocket(pNetConnecter))
-				{
-					pNetConnecter->shutdown(true, "add socket error");
-					continue;
-				}
-				pNetConnecter->setHandler(pHandler);
-
-				// 模拟底层发一个可写事件
-				pNetConnecter->onEvent(eNET_Send);
+				break;
 			}
+
+			if (this->m_pNetEventLoop->getSocketCount() >= this->m_pNetEventLoop->getMaxSocketCount())
+			{
+				g_pLog->printWarning("out of max connection[%d]", this->m_pNetEventLoop->getMaxSocketCount());
+				closesocket(nSocketID);
+				break;
+			}
+
+			g_pLog->printInfo("new connection accept listen addr: %s %d cur connection[%d]", this->getListenAddr().szHost, this->getListenAddr().nPort, this->m_pNetEventLoop->getSocketCount());
+
+			CNetConnecter* pNetConnecter = new CNetConnecter();
+			if (!pNetConnecter->init(this->getSendBufferSize(), this->getRecvBufferSize(), this->m_pNetEventLoop))
+			{
+				delete pNetConnecter;
+				closesocket(nSocketID);
+				continue;
+			}
+			pNetConnecter->setSocketID(nSocketID);
+			pNetConnecter->setLocalAddr();
+			pNetConnecter->setRemoteAddr();
+			pNetConnecter->setConnecterType(eNCT_Passive);
+			pNetConnecter->setConnecterState(eNCS_Connecting);
+			if (!pNetConnecter->nonblock())
+			{
+				pNetConnecter->shutdown(true, "set non block error");
+				continue;
+			}
+			if (!this->m_pNetEventLoop->addSocket(pNetConnecter))
+			{
+				pNetConnecter->shutdown(true, "add socket error");
+				continue;
+			}
+			INetConnecterHandler* pHandler = this->m_pHandler->onAccept(pNetConnecter);
+			if (nullptr == pHandler)
+			{
+				pNetConnecter->shutdown(true, "create hander error");
+				continue;
+			}
+			pNetConnecter->setHandler(pHandler);
+
+			// 模拟底层发一个可写事件
+			pNetConnecter->onEvent(eNET_Send);
 		}
 	}
 

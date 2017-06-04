@@ -11,11 +11,12 @@ namespace net
 		public CNetSocket
 	{
 	public:
-		enum ECloseType
+		enum ENetConnecterFlag
 		{
-			eCT_None = 0,
-			eCT_Recv = 1,
-			eCT_Send = 2,
+			eNCF_CloseRecv		= 1<<0,
+			eNCF_CloseSend		= 1<<1,
+			eNCF_DisableWrite	= 1<<2,
+			eNCF_ConnectFail	= 1<<3,
 		};
 
 	public:
@@ -53,11 +54,10 @@ namespace net
 	private:
 		ENetConnecterType		m_eConnecterType;
 		ENetConnecterState		m_eConnecterState;
-		uint32_t				m_nCloseType;
+		uint32_t				m_nFlag;
 		CNetRecvBuffer*			m_pRecvBuffer;
 		CNetSendBuffer*			m_pSendBuffer;
 		INetConnecterHandler*	m_pHandler;
 		uint32_t				m_nSendConnecterIndex;
-		bool					m_bEnableSend;
 	};
 }

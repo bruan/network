@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2013
-VisualStudioVersion = 12.0.40629.0
+VisualStudioVersion = 12.0.21005.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "network", "..\src\network.vcxproj", "{43D252B6-6807-4C77-810F-25B6F376600A}"
 EndProject
@@ -32,7 +32,6 @@ Global
 		{43D252B6-6807-4C77-810F-25B6F376600A}.Release|x64.ActiveCfg = Release|x64
 		{43D252B6-6807-4C77-810F-25B6F376600A}.Release|x64.Build.0 = Release|x64
 		{3956F865-3377-48AF-A8CB-339EDBE1DF98}.Debug|Mixed Platforms.ActiveCfg = Debug|Win32
-		{3956F865-3377-48AF-A8CB-339EDBE1DF98}.Debug|Mixed Platforms.Build.0 = Debug|Win32
 		{3956F865-3377-48AF-A8CB-339EDBE1DF98}.Debug|Win32.ActiveCfg = Debug|Win32
 		{3956F865-3377-48AF-A8CB-339EDBE1DF98}.Debug|Win32.Build.0 = Debug|Win32
 		{3956F865-3377-48AF-A8CB-339EDBE1DF98}.Debug|x64.ActiveCfg = Debug|x64
