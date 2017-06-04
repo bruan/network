@@ -133,7 +133,6 @@ namespace net
 #ifdef _WIN32
 		eNET_Recv	= 1,
 		eNET_Send	= 2,
-		eNET_Error	= 4,
 #else
 		/*
 			EPOLLIN		有新连接进来触发 对端普通数据进来触发 对端正常关闭连接触发（此时还可能触发EPOLLRDHUP）
@@ -142,10 +141,10 @@ namespace net
 						只有在采取行动（比如读一个已经关闭的socket，或者写一个已经关闭的socket）时候，才知道对方是否关闭了。这个时候如果对方关闭了，
 						则会出现EPOLLERR，EPOLLERR是服务器这边出错
 						EPOLLERR|EPOLLHUP 这两个标记epoll_wait会默认检测，不需要设置
+						EPOLLRDHUP 这个在有些系统中表示对端已经关闭，在我们库里面完全可以由EPOLLIN事件来判断，所以没有用
 		*/
 		eNET_Recv	= EPOLLIN|POLLPRI,
 		eNET_Send	= EPOLLOUT,
-		eNET_Error	= EPOLLERR,
 #endif
 		eNET_Unknown = 0xff
 	};

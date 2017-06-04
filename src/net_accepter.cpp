@@ -7,9 +7,6 @@ namespace net
 {
 	void CNetAccepter::onEvent(uint32_t nEvent)
 	{
-		if (nEvent&eNET_Error)
-			g_pLog->printInfo("CNetAccepter eNET_Error");
-
 		if ((eNET_Recv&nEvent) == 0)
 			return;
 
@@ -192,6 +189,6 @@ namespace net
 
 	void CNetAccepter::shutdown()
 	{
-		this->close(false);
+		this->close(true, false);
 	}
 }

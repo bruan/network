@@ -49,7 +49,7 @@ namespace net
 		uint32_t		getRecvBufferSize() const;
 
 	protected:
-		void			close(bool bCloseSend = true);
+		void			close(bool bRelease, bool bCloseSend);
 
 	protected:
 		CNetEventLoop*	m_pNetEventLoop;

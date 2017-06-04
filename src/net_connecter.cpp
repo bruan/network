@@ -20,55 +20,11 @@ namespace net
 
 	void CNetConnecter::onEvent(uint32_t nEvent)
 	{
-#ifndef _WIN32
-		if ((nEvent&POLLHUP) && !(nEvent&POLLIN))
-		{
-			if (this->m_eConnecterState == eNCS_Connecting && this->m_eConnecterType == eNCT_Initiative)
-				this->m_nFlag |= eNCF_ConnectFail;
-
-			this->shutdown(true, "socket POLLHUP");
-			return;
-		}
-#endif
-		if (nEvent&eNET_Error)
-		{
-#ifdef _WIN32
-			if (getLastError() != NW_EWOULDBLOCK && getLastError() != 0)
-#else
-			if (getLastError() != NW_EINPROGRESS && getLastError() != NW_EAGAIN && getLastError() != NW_EWOULDBLOCK)
-#endif
-			{
-				if (this->m_eConnecterState == eNCS_Connecting && this->m_eConnecterType == eNCT_Initiative)
-					this->m_nFlag |= eNCF_ConnectFail;
-				this->shutdown(true, "socket eNET_Error");
-				return;
-			}
-
-			if (this->m_eConnecterState == eNCS_Connecting && this->m_eConnecterType == eNCT_Initiative)
-			{
-				int32_t err;
-				socklen_t len = sizeof(err);
-				if (getsockopt(this->GetSocketID(), SOL_SOCKET, SO_ERROR, reinterpret_cast<char*>(&err), (socklen_t*)&len) < 0)
-				{
-					this->m_nFlag |= eNCF_ConnectFail;
-					this->shutdown(true, "SO_ERROR getsockopt error %d", getLastError());
-					return;
-				}
-				if (err != 0)
-				{
-					this->m_nFlag |= eNCF_ConnectFail;
-					this->shutdown(true, "SO_ERROR error %d", err);
-					return;
-				}
-			}
-		}
-
 		switch (this->m_eConnecterState)
 		{
 		case eNCS_Connecting:
 			if (eNET_Send&nEvent)
 				this->onConnect();
-
 			break;
 
 		case eNCS_Connected:
@@ -83,7 +39,6 @@ namespace net
 
 			if (nEvent&eNET_Send)
 				this->onSend();
-
 			break;
 
 		default:
@@ -207,8 +162,11 @@ namespace net
 					this->m_pNetEventLoop->updateEpollState(this, EPOLL_CTL_MOD);
 #endif
 				}
-				if (this->m_eConnecterState == eNCS_Connected)
-					this->shutdown(false, "remote connection is close");
+				
+				this->printInfo("remote connection is close");
+
+				this->m_eConnecterState = eNCS_Disconnecting;
+				this->close((this->m_nFlag&eNCF_CloseSend) != 0, false);
 
 				break;
 			}
@@ -271,8 +229,8 @@ namespace net
 		if (nTotalDataSize != 0 && this->m_pSendBuffer->getTailDataSize() == 0 && this->m_pHandler != nullptr)
 			this->m_pHandler->onSendComplete(nTotalDataSize);
 		
-		if (eNCS_Disconnecting == this->m_eConnecterState && this->m_pSendBuffer->getTailDataSize() == 0)
-			this->close();
+		if (this->m_nFlag&eNCF_CloseSend && this->m_pSendBuffer->getTailDataSize() == 0)
+			this->close(this->m_nFlag&eNCF_CloseRecv, true);
 	}
 
 	void CNetConnecter::flushSend()
@@ -462,7 +420,7 @@ namespace net
 		this->m_eConnecterState = eNCS_Disconnecting;
 		this->m_nFlag |= eNCF_CloseSend;
 		if (bForce || this->m_pSendBuffer->getTailDataSize() == 0)
-			this->close();
+			this->close(bForce || (this->m_nFlag&eNCF_CloseRecv), true);
 	}
 
 	void CNetConnecter::setHandler(INetConnecterHandler* pHandler)

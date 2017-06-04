@@ -158,8 +158,7 @@ namespace net
 				FD_SET(pNetSocket->GetSocketID(), &readfds);
 			if (0 != (pNetSocket->getEvent()&eNET_Send))
 				FD_SET(pNetSocket->GetSocketID(), &writefds);
-			if (0 != (pNetSocket->getEvent()&eNET_Error))
-				FD_SET(pNetSocket->GetSocketID(), &exceptfds);
+			FD_SET(pNetSocket->GetSocketID(), &exceptfds);
 		}
 
 		struct timeval timeout;
@@ -187,7 +186,7 @@ namespace net
 			if (FD_ISSET(pNetSocket->GetSocketID(), &writefds))
 				nEvent |= eNET_Send;
 			if (FD_ISSET(pNetSocket->GetSocketID(), &exceptfds))
-				nEvent |= eNET_Error;
+				nEvent |= eNET_Recv | eNET_Send;
 			
 			pNetSocket->onEvent(nEvent);
 		}
@@ -206,7 +205,17 @@ namespace net
 				{
 					INetBase* pNetBase = reinterpret_cast<INetBase*>(this->m_vecEpollEvent[i].data.ptr);
 					if (pNetBase != nullptr)
-						pNetBase->onEvent(this->m_vecEpollEvent[i].events);
+					{
+						uint32_t nRawEvent = this->m_vecEpollEvent[i].events;
+						uint32_t nEvent = 0;
+						if (nRawEvent & (EPOLLHUP | EPOLLERR))
+							nEvent = eNET_Send|eNET_Recv;
+						if (nRawEvent & (EPOLLIN | POLLPRI))
+							nEvent |= eNET_Recv;
+						if (nRawEvent & EPOLLOUT)
+							nEvent |= eNET_Send;
+						pNetBase->onEvent(nEvent);
+					}
 				}
 				break;
 			}

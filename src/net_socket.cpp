@@ -12,7 +12,7 @@ namespace net
 		: m_pNetEventLoop(nullptr)
 		, m_nSocketID(_Invalid_SocketID)
 		, m_nSocketIndex(_Invalid_SocketIndex)
-		, m_nEvent(eNET_Recv | eNET_Send | eNET_Error)
+		, m_nEvent(eNET_Recv | eNET_Send)
 		, m_nSendBufferSize(0)
 		, m_nRecvBufferSize(0)
 		, m_bWaitClose(false)
@@ -78,7 +78,7 @@ namespace net
 		return true;
 	}
 
-	void CNetSocket::close(bool bCloseSend /* = true */)
+	void CNetSocket::close(bool bRelease, bool bCloseSend)
 	{
 		if (this->m_bWaitClose)
 			return;
@@ -88,8 +88,11 @@ namespace net
 		if (bCloseSend)
 			::shutdown(this->m_nSocketID, SD_SEND);
 
-		this->m_pNetEventLoop->addCloseSocket(this);
-		this->m_bWaitClose = true;
+		if (bRelease)
+		{
+			this->m_pNetEventLoop->addCloseSocket(this);
+			this->m_bWaitClose = true;
+		}
 	}
 
 	bool CNetSocket::nonblock()
