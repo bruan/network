@@ -16,6 +16,7 @@ namespace http
 		virtual void		onSendComplete(uint32_t nSize) { }
 		virtual void		onConnect();
 		virtual void		onDisconnect();
+		virtual void		onConnectFail() { }
 
 	private:
 		bool				parseRequestLine(const char* szBegin, const char* szEnd);
