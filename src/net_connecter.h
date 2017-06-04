@@ -24,7 +24,7 @@ namespace net
 		virtual ~CNetConnecter();
 
 		virtual void				onEvent(uint32_t nEvent);
-		virtual void				forceClose();
+		virtual void				release();
 		virtual bool				init(uint32_t nSendBufferSize, uint32_t nRecvBufferSize, CNetEventLoop* pNetEventLoop);
 
 		virtual bool				send(const void* pData, uint32_t nDataSize, bool bCache);

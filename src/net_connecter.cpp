@@ -46,7 +46,7 @@ namespace net
 		}
 	}
 
-	void CNetConnecter::forceClose()
+	void CNetConnecter::release()
 	{
 		this->m_eConnecterState = eNCS_Disconnected;
 		if (this->m_pHandler != nullptr)
@@ -64,7 +64,7 @@ namespace net
 			this->m_pHandler = nullptr;
 		}
 		this->m_pNetEventLoop->delSendConnecter(this);
-		CNetSocket::forceClose();
+		CNetSocket::release();
 
 		delete this;
 	}
@@ -274,12 +274,12 @@ namespace net
 
 		if (!this->nonblock())
 		{
-			this->forceClose();
+			::closesocket(this->GetSocketID());
 			return false;
 		}
 		if (!this->setBufferSize())
 		{
-			this->forceClose();
+			::closesocket(this->GetSocketID());
 			return false;
 		}
 		this->m_sRemoteAddr = sNetAddr;
@@ -314,7 +314,7 @@ namespace net
 
 			default:
 				g_pLog->printInfo("connect error socket_id: %d remote addr: %s %d err: %d", this->GetSocketID(), this->m_sRemoteAddr.szHost, this->m_sRemoteAddr.nPort, getLastError());
-				CNetSocket::forceClose();
+				::closesocket(this->GetSocketID());
 				return false;
 			}
 		}

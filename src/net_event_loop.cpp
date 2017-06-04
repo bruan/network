@@ -33,7 +33,7 @@ namespace net
 			if (nullptr == pSocket)
 				continue;
 
-			pSocket->forceClose();
+			pSocket->release();
 		}
 		delete this->m_pWakeup;
 		this->m_vecSocket.clear();
@@ -80,7 +80,13 @@ namespace net
 		}
 		pNetAccepter->setHandler(pHandler);
 
-		return pNetAccepter->listen(netAddr);
+		if (!pNetAccepter->listen(netAddr))
+		{
+			delete pNetAccepter;
+			return false;
+		}
+
+		return true;
 	}
 
 	bool CNetEventLoop::connect(const SNetAddr& netAddr, uint32_t nSendBufferSize, uint32_t nRecvBufferSize, INetConnecterHandler* pHandler)
@@ -93,8 +99,10 @@ namespace net
 		}
 		pNetConnecter->setHandler(pHandler);
 		if (!pNetConnecter->connect(netAddr))
+		{
+			delete pNetConnecter;
 			return false;
-
+		}
 		return true;
 	}
 
@@ -111,7 +119,7 @@ namespace net
 			if (nullptr == pSocket)
 				continue;
 
-			pSocket->forceClose();
+			pSocket->release();
 		}
 		this->m_listCloseSocket.clear();
 

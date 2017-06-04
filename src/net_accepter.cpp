@@ -82,9 +82,9 @@ namespace net
 		}
 	}
 
-	void CNetAccepter::forceClose()
+	void CNetAccepter::release()
 	{
-		CNetSocket::forceClose();
+		CNetSocket::release();
 		delete this;
 	}
 
@@ -125,7 +125,7 @@ namespace net
 		
 		if (!this->reuseAddr())
 		{
-			this->forceClose();
+			::closesocket(this->GetSocketID());
 			return false;
 		}
 		
@@ -133,13 +133,13 @@ namespace net
 		
 		if (!this->nonblock())
 		{
-			this->forceClose();
+			::closesocket(this->GetSocketID());
 			return false;
 		}
 		// 监听到的连接会继承缓冲区大小
 		if (!this->setBufferSize())
 		{
-			this->forceClose();
+			::closesocket(this->GetSocketID());
 			return false;
 		}
 
@@ -153,14 +153,14 @@ namespace net
 		if (0 != ::bind(this->GetSocketID(), (sockaddr*)&listenAddr, sizeof(listenAddr)))
 		{
 			g_pLog->printWarning("bind socket to %s %d error %d", this->m_sLocalAddr.szHost, this->m_sLocalAddr.nPort, getLastError());
-			this->forceClose();
+			::closesocket(this->GetSocketID());
 			return false;
 		}
 
 		if (0 != ::listen(this->GetSocketID(), SOMAXCONN))
 		{
 			g_pLog->printWarning("listen socket to %s %d error %d", this->m_sLocalAddr.szHost, this->m_sLocalAddr.nPort, getLastError());
-			this->forceClose();
+			::closesocket(this->GetSocketID());
 			return false;
 		}
 		g_pLog->printInfo("start listen %s %d socket_id: %d ", this->m_sLocalAddr.szHost, this->m_sLocalAddr.nPort, this->GetSocketID());

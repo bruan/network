@@ -37,7 +37,7 @@ namespace net
 		return true;
 	}
 
-	void CNetSocket::forceClose()
+	void CNetSocket::release()
 	{
 		if (this->m_nSocketIndex != _Invalid_SocketIndex)
 			this->m_pNetEventLoop->delSocket(this);

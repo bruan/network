@@ -14,7 +14,7 @@ namespace net
 		virtual ~CNetAccepter();
 
 		virtual void            onEvent(uint32_t nEvent);
-		virtual void            forceClose();
+		virtual void            release();
 		virtual bool			init(uint32_t nSendBufferSize, uint32_t nRecvBufferSize, CNetEventLoop* pNetEventLoop);
 
 		virtual void            setHandler(INetAccepterHandler* pHandler);

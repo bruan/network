@@ -30,7 +30,7 @@ namespace net
 
 		virtual bool	init(uint32_t nSendBufferSize, uint32_t nRecvBufferSize, CNetEventLoop* pNetEventLoop);
 		virtual void	onEvent(uint32_t nEvent) = 0;
-		virtual void	forceClose();
+		virtual void	release();
 
 		bool			open();
 		bool			nonblock();
