@@ -44,7 +44,6 @@ namespace net
 		int32_t			getSendConnecterCount() const;
 
 #ifndef _WIN32
-		void			updateEpollState(CNetSocket* pNetSocket, int32_t nOperator);
 		int32_t			getEpoll() const;
 #endif
 

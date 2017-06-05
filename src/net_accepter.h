@@ -13,9 +13,11 @@ namespace net
 		CNetAccepter();
 		virtual ~CNetAccepter();
 
-		virtual void            onEvent(uint32_t nEvent);
-		virtual void            release();
 		virtual bool			init(uint32_t nSendBufferSize, uint32_t nRecvBufferSize, CNetEventLoop* pNetEventLoop);
+		virtual void            release();
+		virtual void            onEvent(uint32_t nEvent);
+		virtual uint32_t		getSocketType() const { return eNST_Acceptor; }
+		virtual bool			isDisableWrite() const { return true; }
 
 		virtual void            setHandler(INetAccepterHandler* pHandler);
 		virtual const SNetAddr& getListenAddr() const;

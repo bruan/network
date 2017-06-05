@@ -12,14 +12,10 @@ namespace net
 		: m_pNetEventLoop(nullptr)
 		, m_nSocketID(_Invalid_SocketID)
 		, m_nSocketIndex(_Invalid_SocketIndex)
-		, m_nEvent(eNET_Recv | eNET_Send)
 		, m_nSendBufferSize(0)
 		, m_nRecvBufferSize(0)
 		, m_bWaitClose(false)
 	{
-#ifndef _WIN32
-		this->m_nEvent |= EPOLLET;
-#endif
 	}
 
 	CNetSocket::~CNetSocket()
@@ -210,11 +206,6 @@ namespace net
 	int32_t CNetSocket::GetSocketID() const
 	{
 		return this->m_nSocketID;
-	}
-
-	uint32_t CNetSocket::getEvent() const
-	{
-		return this->m_nEvent;
 	}
 
 	uint32_t CNetSocket::getSendBufferSize() const

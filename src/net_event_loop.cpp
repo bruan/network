@@ -160,12 +160,9 @@ namespace net
 			if (nullptr == pNetSocket)
 				continue;
 
-			FD_SET(pNetSocket->GetSocketID(), &exceptfds);
-
-			if (0 != (pNetSocket->getEvent()&eNET_Recv))
-				FD_SET(pNetSocket->GetSocketID(), &readfds);
-			if (0 != (pNetSocket->getEvent()&eNET_Send))
+			if (pNetSocket->isDisableWrite())
 				FD_SET(pNetSocket->GetSocketID(), &writefds);
+			FD_SET(pNetSocket->GetSocketID(), &readfds);
 			FD_SET(pNetSocket->GetSocketID(), &exceptfds);
 		}
 
@@ -242,16 +239,6 @@ namespace net
 	}
 
 #ifndef _WIN32
-	void CNetEventLoop::updateEpollState(CNetSocket* pNetSocket, int32_t nOperator)
-	{
-		struct epoll_event event;
-		memset(&event, 0, sizeof(event));
-		event.data.ptr = pNetSocket;
-		event.events = pNetSocket->getEvent();
-		if (::epoll_ctl(this->m_nEpoll, nOperator, pNetSocket->GetSocketID(), &event) < 0)
-			g_pLog->printWarning("epoll_ctl error operator = %d error %d", nOperator, getLastError());
-	}
-
 	int32_t CNetEventLoop::getEpoll() const
 	{
 		return this->m_nEpoll;
@@ -283,7 +270,15 @@ namespace net
 
 #ifndef _WIN32
 		this->m_vecEpollEvent.resize(this->m_nSocketCount + this->m_nExtraSocketCount);
-		this->updateEpollState(pNetSocket, EPOLL_CTL_ADD);
+		struct epoll_event event;
+		memset(&event, 0, sizeof(event));
+		event.data.ptr = pNetSocket;
+		if (pNetSocket->getSocketType() == CNetSocket::eNST_Connector)
+			event.events = EPOLLIN|POLLPRI|EPOLLOUT|EPOLLET;
+		else
+			event.events = EPOLLIN|POLLPRI|EPOLLOUT|EPOLLLT;
+		if (::epoll_ctl(this->m_nEpoll, EPOLL_CTL_ADD, pNetSocket->GetSocketID(), &event) < 0)
+			g_pLog->printWarning("epoll_ctl error EPOLL_CTL_ADD error %d", getLastError());
 #endif
 		return true;
 	}
@@ -306,8 +301,12 @@ namespace net
 		pNetSocket->setSocketIndex(_Invalid_SocketIndex);
 
 #ifndef _WIN32
-		this->m_vecEpollEvent.resize(this->m_nSocketCount + this->m_nExtraSocketCount);
-		this->updateEpollState(pNetSocket, EPOLL_CTL_DEL);
+		struct epoll_event event;
+		memset(&event, 0, sizeof(event));
+		event.data.ptr = pNetSocket;
+		event.events = 0;
+		if (::epoll_ctl(this->m_nEpoll, EPOLL_CTL_DEL, pNetSocket->GetSocketID(), &event) < 0)
+			g_pLog->printWarning("epoll_ctl error EPOLL_CTL_DEL error %d", getLastError());
 #endif
 	}
 

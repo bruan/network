@@ -169,10 +169,6 @@ namespace net
 		}
 		g_pLog->printInfo("start listen %s %d socket_id: %d ", this->m_sLocalAddr.szHost, this->m_sLocalAddr.nPort, this->GetSocketID());
 
-		// 接收器采用水平触发的方式
-#ifndef _WIN32
-		this->m_nEvent &= ~EPOLLET;
-#endif
 		this->m_pNetEventLoop->addSocket(this);
 
 		return true;

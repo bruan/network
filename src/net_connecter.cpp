@@ -153,18 +153,6 @@ namespace net
 			{
 				this->printInfo("remote connection is close");
 				this->m_nFlag |= eNCF_CloseRecv;
-
-				// 为了防止出现连接一边关闭了，但是尚有数据未发送完，一直触发可读事件
-				if ((this->m_nEvent&eNET_Recv) != 0)
-				{
-					this->m_nEvent &= ~eNET_Recv;
-#ifndef _WIN32
-					this->m_pNetEventLoop->updateEpollState(this, EPOLL_CTL_MOD);
-#endif
-				}
-				
-				this->printInfo("remote connection is close");
-
 				this->m_eConnecterState = eNCS_Disconnecting;
 				this->close((this->m_nFlag&eNCF_CloseSend) != 0, false);
 
@@ -192,8 +180,6 @@ namespace net
 
 	void CNetConnecter::onSend()
 	{
-		this->m_nFlag &= ~eNCF_DisableWrite;
-
 		uint32_t nTotalDataSize = this->m_pSendBuffer->getTotalReadableSize();
 		while (true)
 		{
@@ -202,6 +188,7 @@ namespace net
 			if (0 == nDataSize)
 				break;
 
+			this->m_nFlag &= ~eNCF_DisableWrite;
 #ifdef _WIN32
 			int32_t nRet = ::send(this->GetSocketID(), pData, (int32_t)nDataSize, MSG_NOSIGNAL);
 #else
@@ -475,4 +462,8 @@ namespace net
 		this->m_eConnecterState = eConnecterState;
 	}
 
+	bool CNetConnecter::isDisableWrite() const
+	{
+		return (this->m_nFlag&eNCF_DisableWrite) != 0;
+	}
 }
