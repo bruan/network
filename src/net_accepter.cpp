@@ -41,7 +41,7 @@ namespace net
 			if (this->m_pNetEventLoop->getSocketCount() >= this->m_pNetEventLoop->getMaxSocketCount())
 			{
 				g_pLog->printWarning("out of max connection[%d]", this->m_pNetEventLoop->getMaxSocketCount());
-				closesocket(nSocketID);
+				::closesocket(nSocketID);
 				break;
 			}
 
@@ -51,7 +51,7 @@ namespace net
 			if (!pNetConnecter->init(this->getSendBufferSize(), this->getRecvBufferSize(), this->m_pNetEventLoop))
 			{
 				delete pNetConnecter;
-				closesocket(nSocketID);
+				::closesocket(nSocketID);
 				continue;
 			}
 			pNetConnecter->setSocketID(nSocketID);
@@ -61,18 +61,22 @@ namespace net
 			pNetConnecter->setConnecterState(eNCS_Connecting);
 			if (!pNetConnecter->nonblock())
 			{
-				pNetConnecter->shutdown(true, "set non block error");
-				continue;
-			}
-			if (!this->m_pNetEventLoop->addSocket(pNetConnecter))
-			{
-				pNetConnecter->shutdown(true, "add socket error");
+				delete pNetConnecter;
+				::closesocket(nSocketID);
 				continue;
 			}
 			INetConnecterHandler* pHandler = this->m_pHandler->onAccept(pNetConnecter);
 			if (nullptr == pHandler)
 			{
-				pNetConnecter->shutdown(true, "create hander error");
+				delete pNetConnecter;
+				::closesocket(nSocketID);
+				continue;
+			}
+			if (!this->m_pNetEventLoop->addSocket(pNetConnecter))
+			{
+				delete pNetConnecter;
+				delete pHandler;
+				::closesocket(nSocketID);
 				continue;
 			}
 			pNetConnecter->setHandler(pHandler);

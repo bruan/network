@@ -222,6 +222,7 @@ namespace net
 							nEvent |= eNET_Recv;
 						if (nRawEvent & EPOLLOUT)
 							nEvent |= eNET_Send;
+						// 这里不处理EPOLLRDHUP事件
 						pNetBase->onEvent(nEvent);
 					}
 				}

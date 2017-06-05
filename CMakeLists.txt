@@ -15,7 +15,7 @@ set(CMAKE_CXX_COMPILER "g++")
 # 输出编译选项
 set(CMAKE_VERBOSE_MAKEFILE on)
 #设置编译版本类型
-set(CMAKE_BUILD_TYPE "Release")
+set(CMAKE_BUILD_TYPE "Debug")
 #设置C++ 通用 版本编译选项
 set(CMAKE_CXX_FLAGS "-g -rdynamic -Wall -Wno-reorder -Wno-literal-suffix -finput-charset=gbk -fPIC --std=c++11")
 #设置C++ Debug 版本编译选项
