@@ -160,9 +160,10 @@ namespace net
 			if (nullptr == pNetSocket)
 				continue;
 
-			if (pNetSocket->isDisableWrite())
+			if (pNetSocket->isWriteEvent())
 				FD_SET(pNetSocket->GetSocketID(), &writefds);
-			FD_SET(pNetSocket->GetSocketID(), &readfds);
+			if (pNetSocket->isReadEvent())
+				FD_SET(pNetSocket->GetSocketID(), &readfds);
 			FD_SET(pNetSocket->GetSocketID(), &exceptfds);
 		}
 
@@ -178,7 +179,7 @@ namespace net
 		if (0 == nRet)
 			return;
 
-		// 绝对不会在下面这个循环中去删除Socket的
+		// 绝对不会在下面这个循环中去删除Socket的，但是有可能会增加
 		for (int32_t i = 0; i < this->m_nSocketCount; ++i)
 		{
 			CNetSocket* pNetSocket = this->m_vecSocket[i];
@@ -193,7 +194,8 @@ namespace net
 			if (FD_ISSET(pNetSocket->GetSocketID(), &exceptfds))
 				nEvent |= eNET_Recv | eNET_Send;
 			
-			pNetSocket->onEvent(nEvent);
+			if (nEvent != 0)
+				pNetSocket->onEvent(nEvent);
 		}
 #else
 		do
@@ -276,7 +278,7 @@ namespace net
 		if (pNetSocket->getSocketType() == CNetSocket::eNST_Connector)
 			event.events = EPOLLIN|POLLPRI|EPOLLOUT|EPOLLET;
 		else
-			event.events = EPOLLIN|POLLPRI|EPOLLOUT|EPOLLLT;
+			event.events = EPOLLIN|POLLPRI|EPOLLOUT;
 		if (::epoll_ctl(this->m_nEpoll, EPOLL_CTL_ADD, pNetSocket->GetSocketID(), &event) < 0)
 			g_pLog->printWarning("epoll_ctl error EPOLL_CTL_ADD error %d", getLastError());
 #endif

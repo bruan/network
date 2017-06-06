@@ -9,6 +9,7 @@
 #endif
 
 #include <iostream>
+#include <vector>
 using namespace std;
 
 #pragma pack(push,1)
@@ -65,13 +66,19 @@ public:
 
 	void onDispatch(const message_header* pHeader)
 	{
-		//std::cout << "onDispatch" << std::endl;
+		std::cout << "onDispatch" << std::endl;
 		this->m_pNetConnecter->send(pHeader, pHeader->nMessageSize, true);
 	}
 
 	virtual void onConnect()
 	{
 		std::cout << "onConnect" << std::endl;
+// 		for (size_t i = 0; i < 10; ++i)
+// 		{
+// 			std::vector<char> buf;
+// 			buf.resize(60 * 1024);
+// 			this->m_pNetConnecter->send(&buf[0], buf.size(), false);
+// 		}
 	}
 
 	virtual void onDisconnect()

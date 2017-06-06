@@ -93,6 +93,7 @@ namespace net
 			return;
 		}
 		
+		this->m_nFlag &= ~eNCF_DisableWrite;
 		/*
 		如果只可写，说明连接成功，可以进行下面的操作。
 		如果描述符既可读又可写，分为两种情况，
@@ -234,6 +235,7 @@ namespace net
 		, m_pRecvBuffer(nullptr)
 		, m_pSendBuffer(nullptr)
 	{
+		this->m_nFlag |= eNCF_DisableWrite;
 	}
 
 	CNetConnecter::~CNetConnecter()
@@ -462,8 +464,14 @@ namespace net
 		this->m_eConnecterState = eConnecterState;
 	}
 
-	bool CNetConnecter::isDisableWrite() const
+	bool CNetConnecter::isWriteEvent() const
 	{
-		return (this->m_nFlag&eNCF_DisableWrite) != 0;
+		// 在读关闭的时候如果写
+		return (this->m_nFlag&eNCF_DisableWrite|eNCF_CloseRecv) != 0;
+	}
+
+	bool CNetConnecter::isReadEvent() const
+	{
+		return (this->m_nFlag&eNCF_CloseRecv) == 0;
 	}
 }

@@ -124,7 +124,7 @@ public:
 
 	void onDispatch(const message_header* pHeader)
 	{
-		//std::cout << "onDispatch" << std::endl;
+		std::cout << "onDispatch" << std::endl;
 		this->m_pNetConnecter->send(pHeader, pHeader->nMessageSize, false);
 	}
 
@@ -135,13 +135,13 @@ public:
 		netMsg->nMessageID = 1000;
 		netMsg->nMessageSize = (uint16_t)(sizeof(STestMsg) + g_nPackageSize);
 
-		//this->m_pNetConnecter->send(netMsg, netMsg->nMessageSize, false);
+		this->m_pNetConnecter->send(netMsg, netMsg->nMessageSize, false);
 
 		std::cout << "onConnect" << std::endl;
 
-		uint32_t i = 0;
-		std::cin >> i;
-		this->m_pNetConnecter->shutdown(false, "");
+// 		uint32_t i = 0;
+// 		std::cin >> i;
+// 		this->m_pNetConnecter->shutdown(false, "");
 	}
 
 	virtual void onDisconnect()

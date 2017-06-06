@@ -27,7 +27,8 @@ namespace net
 		virtual void				release();
 		virtual void				onEvent(uint32_t nEvent);
 		virtual uint32_t			getSocketType() const { return eNST_Connector; }
-		virtual bool				isDisableWrite() const;
+		virtual bool				isWriteEvent() const;
+		virtual bool				isReadEvent() const;
 
 		virtual bool				send(const void* pData, uint32_t nDataSize, bool bCache);
 		virtual void				setHandler(INetConnecterHandler* pHandler);

@@ -129,6 +129,24 @@ namespace net
 
 
 /*
+enum EPOLL_EVENTS
+{
+EPOLLIN			= 0x001,
+EPOLLPRI		= 0x002,
+EPOLLOUT		= 0x004,
+EPOLLRDNORM		= 0x040,
+EPOLLRDBAND		= 0x080,
+EPOLLWRNORM		= 0x100,
+EPOLLWRBAND		= 0x200,
+EPOLLMSG		= 0x400,
+EPOLLERR		= 0x008,
+EPOLLHUP		= 0x010,
+EPOLLRDHUP		= 0x2000,
+EPOLLWAKEUP		= 1u << 29,
+EPOLLONESHOT	= 1u << 30,
+EPOLLET			= 1u << 31
+};
+
 EPOLLIN		有新连接进来触发 对端普通数据进来触发 对端正常关闭连接触发（此时还可能触发EPOLLRDHUP）
 EPOLLOUT	水平触发模式下，只要发送缓冲区没满就一直触发，边沿触发模式下发送缓冲区从高水位进入低水位时触发（水位可以设置默认是1）
 EPOLLERR	socket能检测到对方出错吗？目前为止，好像我还不知道如何检测，但是，在给已经关闭的socket写时，会发生EPOLLERR，也就是说，
