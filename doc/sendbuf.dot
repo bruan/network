@@ -1,0 +1,12 @@
+digraph structs {
+
+node [shape = record];
+
+struct1 [label = "head|tail"];
+struct2 [label = "readpos|writepos|bufsize|next"];
+struct3 [label = "readpos|writepos|bufsize|next"];
+
+struct1 -> struct2;
+struct1 -> struct3;
+struct2 -> struct3;
+}

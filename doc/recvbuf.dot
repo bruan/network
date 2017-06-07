@@ -1,0 +1,6 @@
+digraph structs {
+node [shape = record];
+
+struct1 [label = "unuse|readable|writable"];
+
+}
