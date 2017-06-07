@@ -466,8 +466,7 @@ namespace net
 
 	bool CNetConnecter::isWriteEvent() const
 	{
-		// 在读关闭的时候如果写
-		return (this->m_nFlag&eNCF_DisableWrite|eNCF_CloseRecv) != 0;
+		return (this->m_nFlag&eNCF_DisableWrite) != 0;
 	}
 
 	bool CNetConnecter::isReadEvent() const
