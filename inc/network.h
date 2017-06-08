@@ -97,6 +97,13 @@ namespace net
 		eNCT_Unknown
 	};
 
+	enum ENetConnecterCloseType
+	{
+		eNCCT_Grace,	// 只是关闭本端发送，并且会保证已经在发送缓存中的数据发送完关闭，对端关闭由对端控制，本端会一直等待对端关闭
+		eNCCT_Normal,	// 保证本端已经在发送缓存中的数据发送，然后关闭，即使没有收到对端关闭
+		eNCCT_Force,	// 强制关闭，不等待发送缓存中国的数据被发送。
+	};
+
 	class INetConnecter;
 	/**
 	@brief: 网络连接处理器
@@ -209,9 +216,9 @@ namespace net
 		*/
 		virtual bool				send(const void* pData, uint32_t nSize, bool bCache) = 0;
 		/**
-		@brief: 关闭连接，如果连接当前没有建立最好设置下setHandler( nullptr ) 不然还是会调用INetConnecterHandler的onDisconnect
+		@brief: 关闭连接
 		*/
-		virtual void				shutdown(bool bForce, const char* szFormat, ...) = 0;
+		virtual void				shutdown(ENetConnecterCloseType eType, const char* szFormat, ...) = 0;
 		/**
 		@brief: 设置连接处理器
 		*/

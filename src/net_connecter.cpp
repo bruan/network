@@ -107,13 +107,13 @@ namespace net
 			if (getsockopt(this->GetSocketID(), SOL_SOCKET, SO_ERROR, reinterpret_cast<char*>(&err), (socklen_t*)&len) < 0)
 			{
 				this->m_nFlag |= eNCF_ConnectFail;
-				this->shutdown(true, "SO_ERROR getsockopt error %d", getLastError());
+				this->shutdown(eNCCT_Force, "SO_ERROR getsockopt error %d", getLastError());
 				return;
 			}
 			if (err != 0)
 			{
 				this->m_nFlag |= eNCF_ConnectFail;
-				this->shutdown(true, "SO_ERROR error %d", err);
+				this->shutdown(eNCCT_Force, "SO_ERROR error %d", err);
 				return;
 			}
 		}
@@ -122,7 +122,7 @@ namespace net
 		if (this->getRemoteAddr() == this->getLocalAddr())
 		{
 			this->m_nFlag |= eNCF_ConnectFail;
-			this->shutdown(true, "connect owner");
+			this->shutdown(eNCCT_Force, "connect owner");
 			return;
 		}
 		this->m_eConnecterState = eNCS_Connected;
@@ -167,7 +167,7 @@ namespace net
 				if (getLastError() == NW_EINTR)
 					continue;
 
-				this->shutdown(true, "recv data error");
+				this->shutdown(eNCCT_Force, "recv data error");
 				break;
 			}
 			this->m_pRecvBuffer->push(nRet);
@@ -205,7 +205,7 @@ namespace net
 				if (getLastError() == NW_EINTR)
 					continue;
 
-				this->shutdown(true, "send data error");
+				this->shutdown(eNCCT_Force, "send data error");
 				break;
 			}
 			this->m_pSendBuffer->pop(nRet);
@@ -218,7 +218,7 @@ namespace net
 			this->m_pHandler->onSendComplete(nTotalDataSize);
 		
 		if (this->m_nFlag&eNCF_CloseSend && this->m_pSendBuffer->getTailDataSize() == 0)
-			this->close(this->m_nFlag&eNCF_CloseRecv, true);
+			this->close((this->m_nFlag&(eNCF_CloseRecv|eNCCT_Force)) != 0, true);
 	}
 
 	void CNetConnecter::flushSend()
@@ -343,7 +343,7 @@ namespace net
 				{
 					if (getLastError() != NW_EAGAIN && getLastError() != NW_EWOULDBLOCK)
 					{
-						this->shutdown(true, "send data error");
+						this->shutdown(eNCCT_Force, "send data error");
 						return false;
 					}
 
@@ -391,7 +391,7 @@ namespace net
 	直接closesocket时，此时发送跟接受都不行，对端会触发recv事件，数据大小为0
 	showdown时,此时发送不行，接收是可以的，对端会触发recv事件，数据大小为0
 	*/
-	void CNetConnecter::shutdown(bool bForce, const char* szFormat, ...)
+	void CNetConnecter::shutdown(ENetConnecterCloseType eType, const char* szFormat, ...)
 	{
 		DebugAst(szFormat != nullptr);
 
@@ -408,8 +408,10 @@ namespace net
 
 		this->m_eConnecterState = eNCS_Disconnecting;
 		this->m_nFlag |= eNCF_CloseSend;
-		if (bForce || this->m_pSendBuffer->getTailDataSize() == 0)
-			this->close(bForce || (this->m_nFlag&eNCF_CloseRecv), true);
+		if (eType == eNCCT_Grace)
+			this->m_nFlag |= eNCF_GraceClose;
+		if (eType == eNCCT_Force || this->m_pSendBuffer->getTailDataSize() == 0)
+			this->close(eType == eNCCT_Force || (this->m_nFlag&eNCF_CloseRecv), true);
 	}
 
 	void CNetConnecter::setHandler(INetConnecterHandler* pHandler)
