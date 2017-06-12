@@ -76,10 +76,10 @@ namespace net
 
 	void CNetSocket::close(bool bRelease, bool bCloseSend)
 	{
+		g_pLog->printInfo("CNetSocket::close socketid %d release: %d close_send: %d, wait_close", this->m_nSocketID, bRelease, bCloseSend, this->m_bWaitClose);
+
 		if (this->m_bWaitClose)
 			return;
-
-		g_pLog->printInfo("CNetSocket::close socketid %d", this->m_nSocketID);
 
 		if (bCloseSend)
 			::shutdown(this->m_nSocketID, SD_SEND);

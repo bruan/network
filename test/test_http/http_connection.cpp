@@ -27,14 +27,14 @@ namespace http
 			static char szBuf[] = "HTTP/1.1 400 Bad Request\r\nContent-Type: text/plain\r\nConnection: close\r\n\r\n400 Bad Request\n";
 
 			this->m_pNetConnecter->send(szBuf, sizeof(szBuf), false);
-			this->m_pNetConnecter->shutdown(false, "bad request");
+			this->m_pNetConnecter->shutdown(net::eNCCT_Normal, "bad request");
 			return nDataSize;
 		}
 
 		if (this->m_nState == ePS_Finish)
 		{
 			if (!this->m_pHttpServer->dispatch(this, this->m_request))
-				this->m_pNetConnecter->shutdown(false, "");
+				this->m_pNetConnecter->shutdown(net::eNCCT_Normal, "");
 
 			this->m_request.reset();
 			this->m_nState = ePS_RequestLine;

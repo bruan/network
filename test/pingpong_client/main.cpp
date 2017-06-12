@@ -97,7 +97,7 @@ public:
 			const message_header* pHeader = reinterpret_cast<const message_header*>(pData);
 			if (pHeader->nMessageSize < sizeof(message_header))
 			{
-				this->m_pNetConnecter->shutdown(true, "");
+				this->m_pNetConnecter->shutdown(net::eNCCT_Force, "");
 				break;
 			}
 
