@@ -192,7 +192,7 @@ namespace net
 			if (FD_ISSET(pNetSocket->GetSocketID(), &writefds))
 				nEvent |= eNET_Send;
 			if (FD_ISSET(pNetSocket->GetSocketID(), &exceptfds))
-				nEvent |= eNET_Recv | eNET_Send;
+				nEvent |= eNET_Error;
 			
 			if (nEvent != 0)
 				pNetSocket->onEvent(nEvent);
@@ -216,7 +216,7 @@ namespace net
 						uint32_t nRawEvent = this->m_vecEpollEvent[i].events;
 						uint32_t nEvent = 0;
 						if (nRawEvent & (EPOLLHUP | EPOLLERR))
-							nEvent = eNET_Send|eNET_Recv;
+							nEvent = eNET_Error;
 						if (nRawEvent & (EPOLLIN | POLLPRI))
 							nEvent |= eNET_Recv;
 						if (nRawEvent & EPOLLOUT)

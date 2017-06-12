@@ -153,15 +153,16 @@ EPOLLERR	socketÄÜ¼ì²âµ½¶Ô·½³ö´íÂð£¿Ä¿Ç°ÎªÖ¹£¬ºÃÏñÎÒ»¹²»ÖªµÀÈçºÎ¼ì²â£¬µ«ÊÇ£¬ÔÚ¸øÒ
 Ö»ÓÐÔÚ²ÉÈ¡ÐÐ¶¯£¨±ÈÈç¶ÁÒ»¸öÒÑ¾­¹Ø±ÕµÄsocket£¬»òÕßÐ´Ò»¸öÒÑ¾­¹Ø±ÕµÄsocket£©Ê±ºò£¬²ÅÖªµÀ¶Ô·½ÊÇ·ñ¹Ø±ÕÁË¡£Õâ¸öÊ±ºòÈç¹û¶Ô·½¹Ø±ÕÁË£¬
 Ôò»á³öÏÖEPOLLERR£¬EPOLLERRÊÇ·þÎñÆ÷Õâ±ß³ö´í
 EPOLLERR|EPOLLHUP ÕâÁ½¸ö±ê¼Çepoll_wait»áÄ¬ÈÏ¼ì²â£¬²»ÐèÒªÉèÖÃ
-EPOLLRDHUP Õâ¸öÔÚÓÐÐ©ÏµÍ³ÖÐ±íÊ¾¶Ô¶ËÒÑ¾­¹Ø±Õ£¬ÔÚÎÒÃÇ¿âÀïÃæÍêÈ«¿ÉÒÔÓÉEPOLLINÊÂ¼þÀ´ÅÐ¶Ï£¬ËùÒÔÃ»ÓÐÓÃ
+EPOLLRDHUP Õâ¸öÔÚÓÐÐ©ÏµÍ³ÖÐ±íÊ¾¶Ô¶ËÒÑ¾­¹Ø±Õ(Linux 2.6.17Ö®ºó)£¬ÔÚÎÒÃÇ¿âÀïÃæÍêÈ«¿ÉÒÔÓÉEPOLLINÊÂ¼þÀ´ÅÐ¶Ï£¬ËùÒÔÃ»ÓÐÓÃ
 */
 
 	enum ENetEventType
 	{
-		eNET_Recv	= 1,
-		eNET_Send	= 2,
+		eNET_Recv		= 1,
+		eNET_Send		= 2,
+		eNET_Error		= 4,
 
-		eNET_Unknown = 0xff
+		eNET_Unknown	= 0xff
 	};
 
 #define _SEND_BUF_SIZE	2048

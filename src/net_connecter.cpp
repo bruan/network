@@ -23,12 +23,21 @@ namespace net
 		switch (this->m_eConnecterState)
 		{
 		case eNCS_Connecting:
-			if (eNET_Send&nEvent)
+			if (nEvent&(eNET_Send|eNET_Error))
+			{
 				this->onConnect();
+			}
 			break;
 
 		case eNCS_Connected:
 		case eNCS_Disconnecting:
+			if (nEvent&eNET_Error)
+			{
+				// 这里可以大胆的强制关闭连接
+				this->shutdown(eNCCT_Force, "socket eNET_Error");
+				return;
+			}
+
 			if (nEvent&eNET_Recv)
 			{
 				if ((this->m_nFlag&eNCF_CloseRecv) == 0)
@@ -38,7 +47,9 @@ namespace net
 			}
 
 			if (nEvent&eNET_Send)
+			{
 				this->onSend();
+			}
 			break;
 
 		default:

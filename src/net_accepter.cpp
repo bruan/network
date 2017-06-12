@@ -8,7 +8,10 @@ namespace net
 	void CNetAccepter::onEvent(uint32_t nEvent)
 	{
 		if ((eNET_Recv&nEvent) == 0)
+		{
+			g_pLog->printInfo("event type error socket_id: %d error code[%d]", this->GetSocketID(), getLastError());
 			return;
+		}
 
 		for (uint32_t i = 0; i < 10; ++i)
 		{
